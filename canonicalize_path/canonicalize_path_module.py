@@ -1,38 +1,45 @@
-"""This module exists to provide improved path canonicalization
-Normally we can use os.path.realpath() to canonicalize paths, but
-in some cases -- especially with synchronized shares -- there 
-is a better canonical form. 
 
-os.path.realpath eliminates symbolic links, but in some cases these
-symbolic links are used not so much to reference an external location
-but to define a canonical location. 
-
-If those links (in canonical form) are entered in the canon_override
-dictionary, below, then they will be replaced by the canonical 
-replacements specified.
-
-Suggested import:
-
-try: 
-   from canonicalize_path import canonicalize_path
-   path
-except ImportError:
-   from os.path import realpath as canonicalize_path
-   pass
-"""
+from pkg_resources import resource_string
 
 import sys
 import os.path
 
-canon_override={  # don't include excess path separators 
-    "/sata4/databrowse": "/databrowse",
-    "/sataa/databrowse": "/databrowse",
-    "/home/databrowse":  "/databrowse",
-    "/satas/databrowse": "/databrowse",
-    "/home/dataawareness": "/dataawareness",
-    "/satas/secbrowse":  "/secbrowse",
-}
+#canon_override={  # don't include excess path separators 
+#    "/sata4/databrowse": "/databrowse",
+#    "/sataa/databrowse": "/databrowse",
+#    "/home/databrowse":  "/databrowse",
+#    "/satas/databrowse": "/databrowse",
+#    "/home/dataawareness": "/dataawareness",
+#    "/satas/secbrowse":  "/secbrowse",
+#}
 
+# read canon_override from config files 
+# $PREFIX/etc/canonicalize_path/canonical_paths.conf 
+# and $PREFIX/etc/canonicalize_path/canonical_paths_local.conf 
+
+__install_prefix__=resource_string(__name__, 'install_prefix.txt')
+
+if __install_prefix__=="/usr": 
+    config_dir='/etc/canonicalize_path'
+    pass
+else:
+    config_dir=os.path.join(__install_prefix__,"etc","canonicalize_path")
+    pass
+
+
+
+canonical_paths=file(os.path.join(config_dir,"canonical_paths.conf"))
+exec(u'canon_override='+canonical_paths.read().decode('utf-8'))
+canonical_paths.close()
+
+try: 
+    canonical_paths_local=file(os.path.join(config_dir,"canonical_paths_local.conf"))
+    exec(u'canon_override='+canonical_paths.read().decode('utf-8'))
+    canonical_paths.close()
+    pass
+except IOError:
+    pass
+    
 
 def pathsplit(path,lastsplit=None): 
     """portable equivalent for os string.split("/")... 

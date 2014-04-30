@@ -6,7 +6,7 @@ install:
 
 clean:
 	python setup.py clean
-	rm -f *~ *.pyc *.swp
+	rm -f *~ *.pyc *.swp */*~ */*.pyc */*.swp
 	rm -rf build/
 
 commit: clean
