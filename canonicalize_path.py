@@ -73,7 +73,7 @@ for key in canon_override:
     
 
 def translate_prefix(dbpos,pathels):
-    sys.stderr.write("pathels=%s\n" % pathels)
+    # sys.stderr.write("pathels=%s\n" % pathels)
     if len(pathels) > 0 and pathels[0] in dbpos:
         replpath=translate_prefix(dbpos[pathels[0]],pathels[1:])
         if replpath is not None:
