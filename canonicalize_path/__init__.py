@@ -11,6 +11,12 @@ If those links (in canonical form) are entered in the canon_override
 dictionary, below, then they will be replaced by the canonical 
 replacements specified.
 
+A default (empty, but with examples) configuration is installed
+in $PREFIX/etc/canonicalize_path/canonical_paths.conf.
+You should put your site configuration in 
+$PREFIX/etc/canonicalize_path/canonical_paths_local.conf
+
+
 Suggested import:
 
 try: 
