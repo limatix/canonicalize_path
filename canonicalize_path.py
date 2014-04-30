@@ -1,6 +1,3 @@
-import sys
-import os.path
-
 """This module exists to provide improved path canonicalization
 Normally we can use os.path.realpath() to canonicalize paths, but
 in some cases -- especially with synchronized shares -- there 
@@ -23,6 +20,9 @@ except ImportError:
    from os.path import realpath as canonicalize_path
    pass
 """
+
+import sys
+import os.path
 
 canon_override={  # don't include excess path separators 
     "/sata4/databrowse": "/databrowse",
@@ -89,6 +89,11 @@ def translate_prefix(dbpos,pathels):
 
 
 def canonicalize_path(path):
+    """Canonicalize the given path. Like os.path.realpath()x, but 
+    with prefix substitutions according to the mapping at the 
+    top of canoncalize_path.py
+    """
+
     pycanon=os.path.realpath(path) # os.path.abspath(path))
 
     # split path apart
