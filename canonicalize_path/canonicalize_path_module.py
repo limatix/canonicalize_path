@@ -34,8 +34,8 @@ canonical_paths.close()
 
 try: 
     canonical_paths_local=file(os.path.join(config_dir,"canonical_paths_local.conf"))
-    exec(u'canon_override='+canonical_paths.read().decode('utf-8'))
-    canonical_paths.close()
+    exec(u'canon_override.update('+canonical_paths_local.read().decode('utf-8')+')')
+    canonical_paths_local.close()
     pass
 except IOError:
     pass
