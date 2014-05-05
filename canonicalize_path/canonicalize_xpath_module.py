@@ -126,7 +126,7 @@ def getelementxpath(doc,element):
                         indexval=indexval[0].text
                         pass 
                     elif isinstance(indexval,collections.Sequence) and len(indexval) > 1:
-                        raise ValueError("Got multiple nodes searching for index element %s in " % (index)
+                        raise ValueError("Got multiple nodes searching for index element %s in " % (index))
                         pass
                 if len(indexval) > 0:  # if we found a suitable non-empty string
                     indexvalexpr=string_to_etxpath_expression(indexval)  
