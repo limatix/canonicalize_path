@@ -60,7 +60,16 @@ def string_to_etxpath_expression(strval):
     """
 
     if not isinstance(strval,basestring):
-        strval=strval.text
+        # Did we get a node?
+        if hasattr(strval,"tag"):
+            strval=strval.text
+            pass
+        # Did we get a length-1 node-set?
+        elif isinstance(strval,collections.Sequence) and len(strval)==1:
+            strval=strval[0].text
+            pass 
+        else: 
+            raise ValueError("Invalid parameter value (%s) for converting tag %s into an XPath matching expression: Must be a node, length-one node-set, or string. See also tag_index_paths.conf and tag_index_paths_local.conf" % (str(node),element.tag))
         pass
         
     
@@ -94,14 +103,37 @@ def getelementxpath(doc,element):
         pathprefix=getelementxpath(doc,parent)
 
         if element.tag in tag_index_paths:
-            index=tag_index_paths[element.tag]  # get index xpath expression for identifying this element
-
-            # now extract the value of this expression for our element
-            ETXindexval=etree.ETXPath(index) # if etree is None here you need to install python-lxml
-            indexval=ETXindexval(element) # perform xpath lookup
-            indexvalexpr=string_to_etxpath_expression(indexval)
+            indices=tag_index_paths[element.tag]  # get index xpath expression for identifying this element
             
-            indexstr="[%s=%s]" % (index,indexvalexpr)
+            if isinstance(indices,basestring):
+                # if only one index location is provided...
+                indices=(indices,)
+                pass
+            
+            indexstr=""
+
+            for index in indices: 
+                # now extract the value of this expression for our element
+                ETXindexval=etree.ETXPath(index) # if etree is None here you need to install python-lxml
+                indexval=ETXindexval(element) # perform xpath lookup
+                if not isinstance(indexval,basestring):
+                    # Did we get a node?
+                    if hasattr(strval,"tag"):
+                        indexval=indexval.text
+                        pass
+                    # Did we get a length-1 node-set?
+                    elif isinstance(indexval,collections.Sequence) and len(indexval)==1:
+                        indexval=indexval[0].text
+                        pass 
+                    elif isinstance(indexval,collections.Sequence) and len(indexval) > 1:
+                        raise ValueError("Got multiple nodes searching for index element %s in " % (index)
+                        pass
+                if len(indexval) > 0:  # if we found a suitable non-empty string
+                    indexvalexpr=string_to_etxpath_expression(indexval)  
+                    indexstr="[%s=%s]" % (index,indexvalexpr)
+                    # No need to go on. We found a suitable index
+                    break
+                pass
             pass
         else :
             indexstr=""
