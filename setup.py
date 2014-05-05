@@ -5,7 +5,7 @@ from distutils.command.install_lib import install_lib
 from distutils.command.install import install
 import sys
 
-config_files=["canonical_paths.conf"]
+config_files=["canonical_paths.conf","tag_index_paths.conf"]
 
 class install_lib_save_prefix(install_lib):
     """Save a file install_prefix.txt with the install prefix"""

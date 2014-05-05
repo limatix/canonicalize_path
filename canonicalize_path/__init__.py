@@ -28,6 +28,8 @@ except ImportError:
 """
 
 import canonicalize_path_module
+import canonicalize_xpath_module
 
 canonicalize_path=canonicalize_path_module.canonicalize_path
-
+canonicalize_xpath=canonicalize_xpath_module.canonicalize_xpath
+getelementxpath=canonicalize_xpath_module.getelementxpath
