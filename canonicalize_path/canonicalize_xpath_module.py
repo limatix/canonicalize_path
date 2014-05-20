@@ -170,7 +170,7 @@ def getelementetxpath(doc,element):
         siblings=ETXindex(parent)
         elnum=[ i for i in range(len(siblings)) if siblings[i] is element ][0]+1
 
-        pathel="%s%s[%d]" (element.tag,indexstr,elnum)
+        pathel="%s%s[%d]" % (element.tag,indexstr,elnum)
     
         return "%s/%s" % (pathprefix,pathel)
     pass
