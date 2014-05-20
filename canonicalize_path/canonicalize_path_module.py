@@ -17,7 +17,13 @@ import os.path
 # $PREFIX/etc/canonicalize_path/canonical_paths.conf 
 # and $PREFIX/etc/canonicalize_path/canonical_paths_local.conf 
 
-__install_prefix__=resource_string(__name__, 'install_prefix.txt')
+try: 
+    __install_prefix__=resource_string(__name__, 'install_prefix.txt')
+    pass
+except IOError: 
+    sys.stderr.write("canonicalize_path_module: error reading install_prefix.txt. Assuming /usr/local.\n")
+    __install_prefix__="/usr/local"
+    pass
 
 if __install_prefix__=="/usr": 
     config_dir='/etc/canonicalize_path'
@@ -28,9 +34,15 @@ else:
 
 
 
-canonical_paths=file(os.path.join(config_dir,"canonical_paths.conf"))
-exec(u'canon_override='+canonical_paths.read().decode('utf-8'))
-canonical_paths.close()
+try: 
+    canonical_paths=file(os.path.join(config_dir,"canonical_paths.conf"))
+    exec(u'canon_override='+canonical_paths.read().decode('utf-8'))
+    canonical_paths.close()
+    pass
+except IOError:
+    sys.stderr.write("canonicalize_path_module: Error reading config file %s.\n" % ( os.path.join(config_dir,"canonical_paths.conf")))
+    pass
+
 
 try: 
     canonical_paths_local=file(os.path.join(config_dir,"canonical_paths_local.conf"))
@@ -38,6 +50,7 @@ try:
     canonical_paths_local.close()
     pass
 except IOError:
+    sys.stderr.write("canonicalize_path_module: Warning: No local config file %s.\n" % ( os.path.join(config_dir,"canonical_paths_local.conf")))
     pass
     
 
@@ -117,3 +130,38 @@ def canonicalize_path(path):
 
     return os.path.join(*trans)
 
+def relative_path_to(fromdir,tofile):
+    fromdir=canonicalize_path(fromdir)
+    tofile=canonicalize_path(tofile)
+    
+    if fromdir.endswith(os.path.sep):
+        fromdir=fromdir[:-1]  # eliminate trailing '/', if present
+        pass
+
+    fromdir_split=pathsplit(fromdir)
+    tofile_split=pathsplit(tofile)
+
+    # Determine common prefix
+    pos=0
+    while pos < len(fromdir_split) and pos < len(tofile_split) and fromdir_split[pos]==tofile_split[pos]:
+        pos+=1
+        pass
+
+    relpath_split=[]
+
+    # convert path entries on 'from' side to '..'
+    for entry in fromdir_split[pos:]:
+        if len(entry) > 0: 
+            relpath_split.append('..')
+            pass
+        pass
+
+    # add path entries on 'to' side
+    for entry in tofile_split[pos:]:
+        if len(entry) > 0: 
+            relpath_split.append(entry)
+            pass
+        pass
+    
+    relpath=os.path.join(relpath_split)
+    return relpath

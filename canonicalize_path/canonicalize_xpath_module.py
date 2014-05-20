@@ -3,7 +3,16 @@ import os.path
 import string
 import re
 
+try:
+    import collections.abc as collections_abc  # python 3.3 and above
+    pass
+except ImportError:
+    import collections as collections_abc # < python 3.3
+    pass
+
 from pkg_resources import resource_string
+
+
 
 from canonicalize_path_module import canonicalize_path
 from canonicalize_path_module import pathsplit
@@ -16,7 +25,15 @@ try:
 except ImportError: 
     pass
     
-__install_prefix__=resource_string(__name__, 'install_prefix.txt')
+try: 
+    __install_prefix__=resource_string(__name__, 'install_prefix.txt')
+    pass
+except IOError: 
+    sys.stderr.write("canonicalize_xpath_module: error reading install_prefix.txt. Assuming /usr/local.\n")
+    __install_prefix__="/usr/local"
+    pass
+
+
 
 if __install_prefix__=="/usr": 
     config_dir='/etc/canonicalize_path'
@@ -37,16 +54,24 @@ DBFILE="{http://thermal.cnde.iastate.edu/databrowse/dir}file"
 #
 # }
 
-tag_index_paths_conf=file(os.path.join(config_dir,"tag_index_paths.conf"))
-exec(u'tag_index_paths='+tag_index_paths_conf.read().decode('utf-8'))
-tag_index_paths_conf.close()
+
+try:
+    tag_index_paths_conf=file(os.path.join(config_dir,"tag_index_paths.conf"))
+    exec(u'tag_index_paths='+tag_index_paths_conf.read().decode('utf-8'))
+    tag_index_paths_conf.close()
+    pass
+except IOError:
+    sys.stderr.write("canonicalize_xpath_module: Error reading config file %s.\n" % ( os.path.join(config_dir,"tag_index_paths.conf")))
+    pass
+
 
 try: 
     tag_index_paths_local_conf=file(os.path.join(config_dir,"tag_index_paths_local.conf"))
-    exec(u'tag_index_paths.update('+tag_index_paths_local.read().decode('utf-8')+')')
-    tag_index_paths_local.close()
+    exec(u'tag_index_paths.update('+tag_index_paths_local_conf.read().decode('utf-8')+')')
+    tag_index_paths_local_conf.close()
     pass
 except IOError:
+    sys.stderr.write("canonicalize_xpath_module: Warning: No local config file %s.\n" % ( os.path.join(config_dir,"tag_index_paths_local.conf")))
     pass
     
 
@@ -65,11 +90,11 @@ def string_to_etxpath_expression(strval):
             strval=strval.text
             pass
         # Did we get a length-1 node-set?
-        elif isinstance(strval,collections.Sequence) and len(strval)==1:
+        elif isinstance(strval,collections_abc.Sequence) and len(strval)==1:
             strval=strval[0].text
             pass 
         else: 
-            raise ValueError("Invalid parameter value (%s) for converting tag %s into an XPath matching expression: Must be a node, length-one node-set, or string. See also tag_index_paths.conf and tag_index_paths_local.conf" % (str(node),element.tag))
+            raise ValueError("Invalid parameter value (%s) for converting tag into an XPath matching expression: Must be a node, length-one node-set, or string. See also tag_index_paths.conf and tag_index_paths_local.conf" % (str(strval)))
         pass
         
     
@@ -89,9 +114,10 @@ def string_to_etxpath_expression(strval):
     
 
 
-def getelementxpath(doc,element):
+def getelementetxpath(doc,element):
     # returns full Clark notation xpath (see ETXPath)
     # with leading slash and root element defined 
+    # relative to this document, not the filesystem!
     parent=element.getparent()
     if parent is None:
         # at root 
@@ -100,7 +126,7 @@ def getelementxpath(doc,element):
         return pathel
     else :
         # recursive call to get earlier path components
-        pathprefix=getelementxpath(doc,parent)
+        pathprefix=getelementetxpath(doc,parent)
 
         if element.tag in tag_index_paths:
             indices=tag_index_paths[element.tag]  # get index xpath expression for identifying this element
@@ -118,14 +144,14 @@ def getelementxpath(doc,element):
                 indexval=ETXindexval(element) # perform xpath lookup
                 if not isinstance(indexval,basestring):
                     # Did we get a node?
-                    if hasattr(strval,"tag"):
+                    if hasattr(indexval,"tag"):
                         indexval=indexval.text
                         pass
                     # Did we get a length-1 node-set?
-                    elif isinstance(indexval,collections.Sequence) and len(indexval)==1:
+                    elif isinstance(indexval,collections_abc.Sequence) and len(indexval)==1:
                         indexval=indexval[0].text
                         pass 
-                    elif isinstance(indexval,collections.Sequence) and len(indexval) > 1:
+                    elif isinstance(indexval,collections_abc.Sequence) and len(indexval) > 1:
                         raise ValueError("Got multiple nodes searching for index element %s in " % (index))
                         pass
                 if len(indexval) > 0:  # if we found a suitable non-empty string
@@ -150,7 +176,7 @@ def getelementxpath(doc,element):
     pass
  
 
-def filepath_to_xpath(filepath):
+def filepath_to_etxpath(canonical_filepath):
     """Convert a file path into a db:dir/db:file xpath.
     Suggested that you generally want to canonicalize filepath
     first (with canonicalize_path)"""
@@ -181,7 +207,7 @@ def filepath_to_xpath(filepath):
     
     return filexpath
 
-def create_canonical_xpath(filepath,doc,element):
+def create_canonical_etxpath(filepath,doc,element):
     """Find a canonical absolute (Clark notation) xpath representation based 
        off the filesystem root for the specified element within
        doc. 
@@ -194,13 +220,13 @@ def create_canonical_xpath(filepath,doc,element):
     canonical_filepath=canonicalize_path(filepath)
 
     if doc is not None:
-        xpath=getelementxpath(doc,element)
+        xpath=getelementetxpath(doc,element)
         pass
     else :
         xpath=""
         pass
 
-    filexpath=filepath_to_xpath(canonical_filepath)
+    filexpath=filepath_to_etxpath(canonical_filepath)
 
     fullxpath=filexpath+xpath
     
@@ -218,7 +244,7 @@ def create_canonical_xpath(filepath,doc,element):
 xpath_component_match_re=r"""({[^}]+})?([^[\]/]+)(?:([[](?:(?:[^[\]/"']+)|(?:"[^"]*")|(?:'[^']*'))+[]])([[]\d+[]])?)?"""
 xpath_component_match_obj=re.compile(xpath_component_match_re)
 
-def canonical_xpath_split(fullxpath):
+def canonical_etxpath_split(fullxpath):
     """Split xpath into individual xpath components
     Only accepts ximple paths and reduced xpath from our canonical 
     xpath generator, not full general XPath queries"""
@@ -239,11 +265,11 @@ def canonical_xpath_split(fullxpath):
 
     return components
 
-def canonical_xpath_join(*components):
+def canonical_etxpath_join(*components):
     # Does NOT supply additional leading "/" to make the path absolute
     return string.join(components,"/")    
 
-def canonical_xpath_absjoin(*components):
+def canonical_etxpath_absjoin(*components):
     # DOES  supply leading "/" to make the path absolute
     components.insert("",0)
     return string.join(components,"/")
@@ -272,13 +298,13 @@ constraint_filematch_obj=re.compile(constraint_filematch_re)
 concat_match_re = r"""(?:"([^"]*)"),?"""
 
 
-def canonical_xpath_break_out_file(fullxpath):
+def canonical_etxpath_break_out_file(fullxpath):
     """Break out file path from xpath components of a canonical xpath
     Presumes the file portion covers the entire leading 
     sequence of dbdir:dir an dbdir:file elements
     returns (filepath, xpath within that file)"""
     
-    components=canonical_xpath_split(fullxpath)
+    components=canonical_etxpath_split(fullxpath)
     
     isdir=True
 
@@ -334,14 +360,14 @@ def canonical_xpath_break_out_file(fullxpath):
 
     return (filepath,xpath)
 
-def xpath_isabs(xpath):
+def etxpath_isabs(xpath):
     """Returns TRUE if the xpath is absolute (leading /)"""
     return xpath[0]=='/'
     
 
-def xpath_resolve_dots(xpath):
+def etxpath_resolve_dots(xpath):
     
-    xpathsplit=canonical_xpath_split(xpath)
+    xpathsplit=canonical_etxpath_split(xpath)
 
     posn=0
     while posn < len(xpathsplit):
@@ -360,16 +386,16 @@ def xpath_resolve_dots(xpath):
         posn+=1
         pass
 
-    if xpath_isabs(xpath):
-        resolved_xpath=canonical_xpath_absjoin(xpathsplit)
+    if etxpath_isabs(xpath):
+        resolved_xpath=canonical_etxpath_absjoin(xpathsplit)
         pass
     else:
-        resolved_xpath=canonical_xpath_join(xpathsplit)
+        resolved_xpath=canonical_etxpath_join(xpathsplit)
         pass
 
     return resolved_xpath
 
-def canonicalize_xpath(fullxpath):
+def canonicalize_etxpath(fullxpath):
     """Canonicalize a composite xpath by
        1. Resolving all ".."'s and "."'s
        2. Canonicalizing filepath into an absolute canonical path
@@ -377,17 +403,54 @@ def canonicalize_xpath(fullxpath):
 
        In the future we might modify this to follow xpath symbolic links.
     """
-    fullxpath=xpath_resolve_dots(fullxpath)
+    fullxpath=etxpath_resolve_dots(fullxpath)
 
-    (filepath,xpath)=canonical_xpath_break_out_file(fullxpath)
+    (filepath,xpath)=canonical_etxpath_break_out_file(fullxpath)
 
     canonical_filepath=canonicalize_path(filepath)
     
-    full_canonical_xpath=filepath_to_xpath(canonical_filepath)+xpath
+    full_canonical_xpath=filepath_to_etxpath(canonical_filepath)+xpath
     
     return full_canonical_xpath
 
-def join_relative_xpath(absolute_xpath,relative_xpath):
+def join_relative_etxpath(absolute_xpath,relative_xpath):
     # Suggest canonicalizing absolute_xpath first
     # Suggest re-canonicalizing after join. 
     return absolute_xpath+"/"+relative_xpath
+
+def relative_etxpath_to(from_etxpath,to_etxpath):
+    from_etxpath=canonicalize_etxpath(from_etxpath)
+    to_etxpath=canonicalize_etxpath(to_etxpath)
+
+    if from_etxpath.endswith("/"):
+        from_etxpath=from_etxpath[:-1] # strip trailing slash if present from from
+        pass
+    
+    from_etxpath_split=canonical_etxpath_split(from_etxpath)
+    to_etxpath_split=canonical_etxpath_split(to_etxpath)
+
+    # Determine common prefix
+    pos=0
+    while pos < len(from_etxpath_split) and pos < len(to_etxpath_split) and from_etxpath_split[pos]==to_etxpath_split[pos]:
+        pos+=1
+        pass
+
+    relxpath_split=[]
+    
+    # convert path entries on 'from' side to '..'
+    for entry in from_etxpath_split[pos:]:
+        if len(entry) > 0: 
+            relxpath_split.append('..')
+            pass
+        pass
+
+    # add path entries on 'to' side
+    for entry in to_etxpath_split[pos:]:
+        if len(entry) > 0: 
+            relxpath_split.append(entry)
+            pass
+        pass
+
+    relxpath=canonical_etxpath_join(relxpath_split)
+
+    return relxpath
