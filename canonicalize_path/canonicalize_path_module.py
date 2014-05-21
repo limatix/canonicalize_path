@@ -163,5 +163,5 @@ def relative_path_to(fromdir,tofile):
             pass
         pass
     
-    relpath=os.path.join(relpath_split)
+    relpath=os.path.join(*relpath_split)
     return relpath

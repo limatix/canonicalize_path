@@ -113,7 +113,6 @@ def string_to_etxpath_expression(strval):
 
     
 
-
 def getelementetxpath(doc,element):
     # returns full Clark notation xpath (see ETXPath)
     # with leading slash and root element defined 
@@ -122,7 +121,7 @@ def getelementetxpath(doc,element):
     if parent is None:
         # at root 
         assert(doc.getroot() is element)
-        pathel="/%s" % (element.tag)
+        pathel="/%s[1]" % (element.tag)
         return pathel
     else :
         # recursive call to get earlier path components
@@ -140,16 +139,25 @@ def getelementetxpath(doc,element):
 
             for index in indices: 
                 # now extract the value of this expression for our element
+                # print "index=%s" % (index)
                 ETXindexval=etree.ETXPath(index) # if etree is None here you need to install python-lxml
                 indexval=ETXindexval(element) # perform xpath lookup
+                # print "indexval=%s" % (unicode(indexval))
+                # print "element=%s" % (etree.tostring(element))
                 if not isinstance(indexval,basestring):
                     # Did we get a node?
                     if hasattr(indexval,"tag"):
                         indexval=indexval.text
                         pass
-                    # Did we get a length-1 node-set?
+                    # Did we get a length-1 node-set, strings, etc.?
                     elif isinstance(indexval,collections_abc.Sequence) and len(indexval)==1:
-                        indexval=indexval[0].text
+                        if isinstance(indexval[0],basestring):
+                            indexval=indexval[0]
+                            pass
+                        else:
+                            assert(hasattr(indexval[0],"tag")) # should be an element 
+                            indexval=indexval[0].text
+                            pass
                         pass 
                     elif isinstance(indexval,collections_abc.Sequence) and len(indexval) > 1:
                         raise ValueError("Got multiple nodes searching for index element %s in " % (index))
@@ -157,6 +165,7 @@ def getelementetxpath(doc,element):
                 if len(indexval) > 0:  # if we found a suitable non-empty string
                     indexvalexpr=string_to_etxpath_expression(indexval)  
                     indexstr="[%s=%s]" % (index,indexvalexpr)
+                    # print "indexstr=%s" % (indexstr)
                     # No need to go on. We found a suitable index
                     break
                 pass
@@ -176,6 +185,114 @@ def getelementetxpath(doc,element):
     pass
  
 
+# /({[^}]+})?     Optional Clark notation
+# ([^[\]/]+)      Tag name
+# (?:([[] ... []])([[]\d+[]])?)?   Optional Constraint plus Optional Integer Constraint
+# [^[\]"'{}]+     Constraint content no quotes or braces
+# "[^"]*"         Double Quoted string
+# '[^']*'         Single quoted string
+# [{][^{}]*[}]    Clark notation string
+# (?:(?:[^[\]"'{}]+)|(?:"[^"]*")|(?:'[^']*')|(?:[{][^{}]*[}]))+  Constraint content w/quotes and/or Clark notation
+xpath_clarkcvt_match_re=r"""({[^}]+})?([^[\]/]+)(?:([[](?:(?:[^[\]"'{}]+)|(?:"[^"]*")|(?:'[^']*')|(?:[{][^{}]*[}]))+[]])([[]\d+[]])?)?"""
+xpath_clarkcvt_match_obj=re.compile(xpath_clarkcvt_match_re)
+
+# xpath_primconstraint_match_re matches one element of the primary constraint, not including surrounding [] 
+xpath_primconstraint_match_re=r"""([^[\]"'{}]+)|("[^"]*")|('[^']*')|([{][^{}]*[}])"""
+
+def etxpath2human(etxpath,nsmap):
+    # Convert an etxpath into a more human readable xpath using 
+    # nsmap. Result may be a mixture of prefix- and Clark notation
+
+
+    # reverse namespace mapping
+    revnsmap=dict((url,nspre) for nspre,url in nsmap.items() if nspre is not None)
+
+    splitpath=canonical_etxpath_split(etxpath)
+
+    buildpath=[]
+    for pathentry in splitpath:
+        matchobj=xpath_clarkcvt_match_obj.match(pathentry)
+        # group(1) is Clark prefix, group(2) is tag, group(3) is primary constraint, group(4) is secondary constraint
+        clarkpfx=matchobj.group(1)
+        newpfx=""
+        if clarkpfx is not None:
+            if clarkpfx[1:-1] in revnsmap:
+                newpfx=revnsmap[clarkpfx[1:-1]]+":"
+                pass
+            else : 
+                newpfx=clarkpfx
+                pass
+            pass
+        
+        newtag=matchobj.group(2)
+        # print("newtag=",newtag)
+
+        primconstraint=matchobj.group(3)
+        newprim=""
+        if primconstraint is not None:
+            newprim+="["
+            # Iterate over elements of primconstraint
+            for primconstraint_el_obj in re.finditer(xpath_primconstraint_match_re,primconstraint[1:-1]):
+                # group(1) is arbitrary characters, group(2) is double-quoted strings, group(3) is single-quoted strings, group(4) is Clark notation
+                if primconstraint_el_obj.group(4) is not None:
+                    const_clarkpfx=primconstraint_el_obj.group(4)
+                    if const_clarkpfx[1:-1] in revnsmap:
+                        const_newpfx=revnsmap[const_clarkpfx[1:-1]]+":"
+                        pass
+                    else : 
+                        const_newpfx=const_clarkpfx
+                        pass
+                    newprim+=const_newpfx
+                    pass
+                else :
+                    newprim+=primconstraint_el_obj.group(0) # attach everything
+                    pass
+                pass
+            newprim+="]" # attach trailing close bracket
+            pass
+        if newprim=="[1]":
+            newprim=""
+            pass
+        
+        secconstraint=matchobj.group(4)
+        newsec=""
+        if secconstraint is not None and secconstraint != "[1]":
+            newsec=secconstraint
+            pass
+        
+        buildpath.append(newpfx+newtag+newprim+newsec)
+        pass
+
+    if etxpath_isabs(etxpath):
+        joinpath=canonical_etxpath_absjoin(*buildpath)
+        pass
+    else : 
+        joinpath=canonical_etxpath_join(*buildpath)
+        pass
+    return joinpath
+
+
+
+def getelementhumanxpath(doc,element,nsmap=None):
+    # returns human-readable (to maximum extent possible!) xpath
+    # with leading slash and root element defined relative to this
+    # document, not the filesystem 
+    # 
+    # NOTE: Returned value may NOT be a valid XPath OR a valid ETXPath
+    # because it may be mixed prefix and Clark notation
+
+    # Merge namespace mappings
+    newnsmap=dict(doc.getroot().nsmap)
+    newnsmap.update(element.nsmap)
+    if nsmap is not None: 
+        newnsmap.update(nsmap)
+        pass
+    
+    etxpath=getelementetxpath(doc,element)
+    
+    return etxpath2human(etxpath,newnsmap)
+
+
 def filepath_to_etxpath(canonical_filepath):
     """Convert a file path into a db:dir/db:file xpath.
     Suggested that you generally want to canonicalize filepath
@@ -193,13 +310,15 @@ def filepath_to_etxpath(canonical_filepath):
         pass
 
     # Convert each path component into an ETXPath query component 
-    pathcomponents=["%s[name=%s]" % (DBDIR,string_to_etxpath_expression(fc)) for fc in dircomponents if fc != ""]
+    pathcomponents=["%s[@name=%s]" % (DBDIR,string_to_etxpath_expression(fc)) for fc in dircomponents if fc != "" and fc != "/"]
+
+    # print "dircomponents=%s" % (dircomponents)
     
     if filecomponent is not None:
-        pathcomponents.append("%s[basename=%s]" % (DBFILE,string_to_etxpath_expression(filecomponent)))
+        pathcomponents.append("%s[@basename=%s]" % (DBFILE,string_to_etxpath_expression(filecomponent)))
         pass
         
-    if os.path.isabs():
+    if os.path.isabs(canonical_filepath):
         pathcomponents.insert(0,'') # force leading slash after join
         pass
 
@@ -217,6 +336,7 @@ def create_canonical_etxpath(filepath,doc,element):
        element is an XML etree.Element within doc
     """
 
+    # print "Create_canonical_etxpath(%s,...)" % (filepath)
     canonical_filepath=canonicalize_path(filepath)
 
     if doc is not None:
@@ -225,23 +345,27 @@ def create_canonical_etxpath(filepath,doc,element):
     else :
         xpath=""
         pass
+    # print " -> \"%s\", \"%s\"" % (canonical_filepath,xpath)
 
     filexpath=filepath_to_etxpath(canonical_filepath)
 
     fullxpath=filexpath+xpath
     
+    # print " -> %s" % (fullxpath)
+
     return fullxpath
+
 
 # Only accepts reduced xpath from our canonical xpath generator
 
 # /({[^}]+})?     Optional Clark notation
 # ([^[\]/]+)      Tag name
 # (?:([[] ... []])([[]\d+[]])?)?   Optional Constraint plus Optional Integer Constraint
-# [^[\]/"']+      Constraint content no quotes
+# [^[\]"']+      Constraint content no quotes
 # "[^"]*"         Double Quoted string
 # '[^']*'         Single quoted string
-# (?:(?:[^[\]/"']+)|(?:"[^"]*")|(?:'[^']*'))+  Constraint content w/quotes
-xpath_component_match_re=r"""({[^}]+})?([^[\]/]+)(?:([[](?:(?:[^[\]/"']+)|(?:"[^"]*")|(?:'[^']*'))+[]])([[]\d+[]])?)?"""
+# (?:(?:[^[\]"']+)|(?:"[^"]*")|(?:'[^']*'))+  Constraint content w/quotes
+xpath_component_match_re=r"""({[^}]+})?([^[\]/]+)(?:([[](?:(?:[^[\]"']+)|(?:"[^"]*")|(?:'[^']*'))+[]])([[]\d+[]])?)?"""
 xpath_component_match_obj=re.compile(xpath_component_match_re)
 
 def canonical_etxpath_split(fullxpath):
@@ -271,7 +395,9 @@ def canonical_etxpath_join(*components):
 
 def canonical_etxpath_absjoin(*components):
     # DOES  supply leading "/" to make the path absolute
-    components.insert("",0)
+    components=list(components)
+    components.insert(0,"")
+    # print components
     return string.join(components,"/")
     
 # check format of primary constraint
@@ -286,10 +412,10 @@ def canonical_etxpath_absjoin(*components):
 # (?:([^)"']*)|(?:"[^"]*")|(?:'[^']*'))+  Concatenation content w/quotes
 # (?:"([^"]*)")     Simple Double quoted string (no concatenation)
 # (?:'([^']*)')     Simple Single quoted string (no concatenation)
-constraint_match_re=r"""\[name=(?:(?:concat\(((?:(?:[^)"']*)|(?:"[^"]*")|(?:'[^']*'))+)\))|(?:"([^"]*)")|(?:'([^']*)'))\]$"""
+constraint_match_re=r"""\[@name=(?:(?:concat\(((?:(?:[^)"']*)|(?:"[^"]*")|(?:'[^']*'))+)\))|(?:"([^"]*)")|(?:'([^']*)'))\]$"""
 constraint_match_obj=re.compile(constraint_match_re)
 
-constraint_filematch_re=r"""\[basename=(?:(?:concat\(((?:(?:[^)"']*)|(?:"[^"]*")|(?:'[^']*'))+)\))|(?:"([^"]*)")|(?:'([^']*)'))\]$"""
+constraint_filematch_re=r"""\[@basename=(?:(?:concat\(((?:(?:[^)"']*)|(?:"[^"]*")|(?:'[^']*'))+)\))|(?:"([^"]*)")|(?:'([^']*)'))\]$"""
 constraint_filematch_obj=re.compile(constraint_filematch_re)
 
 
@@ -351,7 +477,7 @@ def canonical_etxpath_break_out_file(fullxpath):
                 compnum+=1
                 continue
             pass
-            isdir=False
+        isdir=False
         pass
     
     if len(components) > compnum:
@@ -362,6 +488,8 @@ def canonical_etxpath_break_out_file(fullxpath):
 
 def etxpath_isabs(xpath):
     """Returns TRUE if the xpath is absolute (leading /)"""
+    if len(xpath)==0:
+        return False
     return xpath[0]=='/'
     
 
@@ -371,6 +499,7 @@ def etxpath_resolve_dots(xpath):
 
     posn=0
     while posn < len(xpathsplit):
+        # print "erd: xps=%s" % (unicode(xpathsplit))
         if xpathsplit[posn]==".":  
             del xpathsplit[posn]  # "." is just the same as its parent element
             # no increment
@@ -387,10 +516,10 @@ def etxpath_resolve_dots(xpath):
         pass
 
     if etxpath_isabs(xpath):
-        resolved_xpath=canonical_etxpath_absjoin(xpathsplit)
+        resolved_xpath=canonical_etxpath_absjoin(*xpathsplit)
         pass
     else:
-        resolved_xpath=canonical_etxpath_join(xpathsplit)
+        resolved_xpath=canonical_etxpath_join(*xpathsplit)
         pass
 
     return resolved_xpath
@@ -403,11 +532,17 @@ def canonicalize_etxpath(fullxpath):
 
        In the future we might modify this to follow xpath symbolic links.
     """
+    # print "initial fullxpath=%s" % (fullxpath)
     fullxpath=etxpath_resolve_dots(fullxpath)
+    # print "fullxpath=%s" % (fullxpath)
 
     (filepath,xpath)=canonical_etxpath_break_out_file(fullxpath)
-
+    # print "filepath=%s; xpath=%s" % (filepath,xpath)
+    
     canonical_filepath=canonicalize_path(filepath)
+    # print "canonical_filepath=%s" % (canonical_filepath)
+    
+    # print "new etxfilepath=%s" % (filepath_to_etxpath(canonical_filepath))
     
     full_canonical_xpath=filepath_to_etxpath(canonical_filepath)+xpath
     
@@ -419,8 +554,14 @@ def join_relative_etxpath(absolute_xpath,relative_xpath):
     return absolute_xpath+"/"+relative_xpath
 
 def relative_etxpath_to(from_etxpath,to_etxpath):
+    # From_etxpath and to_etxpath must be absolute
+    assert(from_etxpath[0]=="/")
     from_etxpath=canonicalize_etxpath(from_etxpath)
+
+    assert(to_etxpath[0]=="/")
+    # print "to_etxpath_orig=%s" % (to_etxpath)
     to_etxpath=canonicalize_etxpath(to_etxpath)
+    # print "to_etxpath_final=%s" % (to_etxpath)
 
     if from_etxpath.endswith("/"):
         from_etxpath=from_etxpath[:-1] # strip trailing slash if present from from
@@ -429,6 +570,12 @@ def relative_etxpath_to(from_etxpath,to_etxpath):
     from_etxpath_split=canonical_etxpath_split(from_etxpath)
     to_etxpath_split=canonical_etxpath_split(to_etxpath)
 
+    # print "From_etxpath: %s" % (from_etxpath)
+    # print "From_etxpath_split: %s" % (unicode(from_etxpath_split))
+
+    # print "To_etxpath: %s" % (to_etxpath)
+    # print "To_etxpath_split: %s" % (unicode(to_etxpath_split))
+
     # Determine common prefix
     pos=0
     while pos < len(from_etxpath_split) and pos < len(to_etxpath_split) and from_etxpath_split[pos]==to_etxpath_split[pos]:
@@ -436,6 +583,8 @@ def relative_etxpath_to(from_etxpath,to_etxpath):
         pass
 
     relxpath_split=[]
+
+    # print "Common prefix length = %d" % (pos)
     
     # convert path entries on 'from' side to '..'
     for entry in from_etxpath_split[pos:]:
@@ -451,6 +600,8 @@ def relative_etxpath_to(from_etxpath,to_etxpath):
             pass
         pass
 
-    relxpath=canonical_etxpath_join(relxpath_split)
+    # print "relxpath_split=%s" % (unicode(relxpath_split))
+
+    relxpath=canonical_etxpath_join(*relxpath_split)
 
     return relxpath
