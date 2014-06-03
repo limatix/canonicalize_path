@@ -18,7 +18,7 @@ import os.path
 # and $PREFIX/etc/canonicalize_path/canonical_paths_local.conf 
 
 try: 
-    __install_prefix__=resource_string(__name__, 'install_prefix.txt')
+    __install_prefix__=resource_string(__name__, 'install_prefix.txt').decode('utf-8')
     pass
 except IOError: 
     sys.stderr.write("canonicalize_path_module: error reading install_prefix.txt. Assuming /usr/local.\n")
@@ -35,7 +35,7 @@ else:
 
 
 try: 
-    canonical_paths=file(os.path.join(config_dir,"canonical_paths.conf"))
+    canonical_paths=open(os.path.join(config_dir,"canonical_paths.conf"),"rb")
     exec(u'canon_override='+canonical_paths.read().decode('utf-8'))
     canonical_paths.close()
     pass
@@ -45,7 +45,7 @@ except IOError:
 
 
 try: 
-    canonical_paths_local=file(os.path.join(config_dir,"canonical_paths_local.conf"))
+    canonical_paths_local=open(os.path.join(config_dir,"canonical_paths_local.conf"),"rb")
     exec(u'canon_override.update('+canonical_paths_local.read().decode('utf-8')+')')
     canonical_paths_local.close()
     pass

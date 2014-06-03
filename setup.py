@@ -19,7 +19,7 @@ class install_lib_save_prefix(install_lib):
 
         for package in self.distribution.command_obj["build_py"].packages:
             install_dir=os.path.join(*([self.install_dir] + package.split('.')))
-            fh=file(os.path.join(install_dir,"install_prefix.txt"),"w")
+            fh=open(os.path.join(install_dir,"install_prefix.txt"),"w")
             fh.write(self.distribution.command_obj["install"].prefix)
             fh.close()
             pass

@@ -27,8 +27,8 @@ except ImportError:
    pass
 """
 
-import canonicalize_path_module
-import canonicalize_xpath_module
+from . import canonicalize_path_module
+from . import canonicalize_xpath_module
 
 canonicalize_path=canonicalize_path_module.canonicalize_path
 relative_path_to=canonicalize_path_module.relative_path_to

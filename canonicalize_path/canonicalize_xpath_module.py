@@ -14,8 +14,8 @@ from pkg_resources import resource_string
 
 
 
-from canonicalize_path_module import canonicalize_path
-from canonicalize_path_module import pathsplit
+from .canonicalize_path_module import canonicalize_path
+from .canonicalize_path_module import pathsplit
 
 
 
@@ -26,7 +26,7 @@ except ImportError:
     pass
     
 try: 
-    __install_prefix__=resource_string(__name__, 'install_prefix.txt')
+    __install_prefix__=resource_string(__name__, 'install_prefix.txt').decode('utf-8')
     pass
 except IOError: 
     sys.stderr.write("canonicalize_xpath_module: error reading install_prefix.txt. Assuming /usr/local.\n")
@@ -56,7 +56,7 @@ DBFILE="{http://thermal.cnde.iastate.edu/databrowse/dir}file"
 
 
 try:
-    tag_index_paths_conf=file(os.path.join(config_dir,"tag_index_paths.conf"))
+    tag_index_paths_conf=open(os.path.join(config_dir,"tag_index_paths.conf"),"rb")
     exec(u'tag_index_paths='+tag_index_paths_conf.read().decode('utf-8'))
     tag_index_paths_conf.close()
     pass
@@ -66,7 +66,7 @@ except IOError:
 
 
 try: 
-    tag_index_paths_local_conf=file(os.path.join(config_dir,"tag_index_paths_local.conf"))
+    tag_index_paths_local_conf=open(os.path.join(config_dir,"tag_index_paths_local.conf"),"rb")
     exec(u'tag_index_paths.update('+tag_index_paths_local_conf.read().decode('utf-8')+')')
     tag_index_paths_local_conf.close()
     pass
