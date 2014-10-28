@@ -113,22 +113,38 @@ def string_to_etxpath_expression(strval):
 
     
 
-def getelementetxpath(doc,element):
+def getelementetxpath(doc,element,root=None,tag_index_paths_override=None):
     # returns full Clark notation xpath (see ETXPath)
     # with leading slash and root element defined 
     # relative to this document, not the filesystem!
+
+    # if root is provided, paths will be relative to this root
+    # instead of doc.getroot() (and doc will not be used)
+
+    if root is None:
+        root=doc.getroot()
+        pass
+
     parent=element.getparent()
-    if parent is None:
+    if parent is None or root is element:
         # at root 
-        assert(doc.getroot() is element)
+        assert(root is element)
         pathel="/%s[1]" % (element.tag)
         return pathel
     else :
         # recursive call to get earlier path components
-        pathprefix=getelementetxpath(doc,parent)
+        pathprefix=getelementetxpath(None,parent,root,tag_index_paths_override=tag_index_paths_override)
 
-        if element.tag in tag_index_paths:
-            indices=tag_index_paths[element.tag]  # get index xpath expression for identifying this element
+        if tag_index_paths_override is None:
+            tag_index_paths_use=tag_index_paths
+            pass
+        else: 
+            tag_index_paths_use=copy.deepcopy(tag_index_paths)
+            tag_index_paths_use.update(tag_index_paths_override)
+            pass
+
+        if element.tag in tag_index_paths_use:
+            indices=tag_index_paths_use[element.tag]  # get index xpath expression for identifying this element
             
             if isinstance(indices,basestring):
                 # if only one index location is provided...
@@ -273,7 +289,7 @@ def etxpath2human(etxpath,nsmap):
 
 
 
-def getelementhumanxpath(doc,element,nsmap=None):
+def getelementhumanxpath(doc,element,nsmap=None,root=None,tag_index_paths_override=None):
     # returns human-readable (to maximum extent possible!) xpath
     # with leading slash and root element defined relative to this
     # document, not the filesystem 
@@ -281,14 +297,22 @@ def getelementhumanxpath(doc,element,nsmap=None):
     # NOTE: Returned value may NOT be a valid XPath OR a valid ETXPath
     # because it may be mixed prefix and Clark notation
 
+    # if root is provided, paths will be relative to this root
+    # instead of doc.getroot() (and doc will not be used)
+
     # Merge namespace mappings
-    newnsmap=dict(doc.getroot().nsmap)
+
+    if root is None: 
+        root=doc.getroot()
+        pass
+
+    newnsmap=dict(root.nsmap)
     newnsmap.update(element.nsmap)
     if nsmap is not None: 
         newnsmap.update(nsmap)
         pass
     
-    etxpath=getelementetxpath(doc,element)
+    etxpath=getelementetxpath(None,element,root,tag_index_paths_override=tag_index_paths_override)
     
     return etxpath2human(etxpath,newnsmap)
 
