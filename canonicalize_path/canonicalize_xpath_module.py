@@ -2,6 +2,7 @@ import sys
 import os.path
 import string
 import re
+import copy
 
 try:
     import collections.abc as collections_abc  # python 3.3 and above
@@ -143,7 +144,10 @@ def getelementetxpath(doc,element,root=None,tag_index_paths_override=None):
             tag_index_paths_use.update(tag_index_paths_override)
             pass
 
+        #sys.stderr.write("element.tag=%s; tag_index_paths_use=%s\n" % (element.tag,tag_index_paths_use))
+
         if element.tag in tag_index_paths_use:
+            #sys.stderr.write("Foundit!\n")
             indices=tag_index_paths_use[element.tag]  # get index xpath expression for identifying this element
             
             if isinstance(indices,basestring):
@@ -158,8 +162,8 @@ def getelementetxpath(doc,element,root=None,tag_index_paths_override=None):
                 # print "index=%s" % (index)
                 ETXindexval=etree.ETXPath(index) # if etree is None here you need to install python-lxml
                 indexval=ETXindexval(element) # perform xpath lookup
-                # print "indexval=%s" % (unicode(indexval))
-                # print "element=%s" % (etree.tostring(element))
+                #sys.stderr.write("indexval=%s\n" % (unicode(indexval)))
+                #sys.stderr.write("element=%s\n" % (etree.tostring(element)))
                 if not isinstance(indexval,basestring):
                     # Did we get a node?
                     if hasattr(indexval,"tag"):
