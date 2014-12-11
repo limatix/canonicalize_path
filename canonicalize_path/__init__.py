@@ -30,9 +30,13 @@ except ImportError:
 from . import canonicalize_path_module
 from . import canonicalize_xpath_module
 
+canonicalize_relpath=canonicalize_path_module.canonicalize_relpath
+canonicalize_filelist=canonicalize_path_module.canonicalize_filelist
+rel_or_abs_path=canonicalize_path_module.rel_or_abs_path
+pathsplit=canonicalize_path_module.pathsplit
 canonicalize_path=canonicalize_path_module.canonicalize_path
 relative_path_to=canonicalize_path_module.relative_path_to
-pathsplit=canonicalize_path_module.pathsplit
+
 
 canonicalize_etxpath=canonicalize_xpath_module.canonicalize_etxpath
 getelementetxpath=canonicalize_xpath_module.getelementetxpath

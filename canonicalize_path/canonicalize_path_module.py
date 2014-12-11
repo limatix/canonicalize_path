@@ -54,6 +54,60 @@ except IOError:
     pass
     
 
+def canonicalize_relpath(contextdir,relpath):
+    # given a path relpath, which may be relative to contextdir
+    # determine the canonical path to this file
+    if not os.path.isabs(relpath):
+        abspath=os.path.join(contextdir,relpath)
+        pass
+    else:
+        abspath=relpath
+        pass
+    return canonicalize_path(abspath)
+
+def canonicalize_filelist(contextdir,filelist):
+    # in-place canonicalize each entry in filelist
+    # assume non-absolute paths are relative to contextdir
+
+    for count in range(len(filelist)):
+        filelist[count]=canonicalize_relpath(contextdir,filelist[count])
+        pass
+    pass
+
+
+
+def rel_or_abs_path(contextdir,destfile,maxdots=1):
+    # Determine the relative or absolute path to a known destination file starting from contextdir
+    # if there are more than maxdots ".." entries at the start of the relative path, 
+    # use the absolute path instead
+    canonpath=canonicalize_path(destfile)
+    relpath=relative_path_to(contextdir,canonpath)
+
+    relpathsplit=pathsplit(relpath)
+    
+    gotnondots=False
+
+    if len(relpathsplit) >= maxdots+1:
+        for cnt in range(maxdots+1):
+            if relpathsplit[cnt]!="..":
+                gotnondots=True
+                pass
+            pass
+        if not gotnondots: 
+            # enough ".."s at start... use absolute path
+            usepath=canonpath
+            pass
+        else: 
+            usepath=relpath
+            pass
+        pass
+    else: 
+        usepath=relpath
+        pass
+    return usepath
+
+
+
 def pathsplit(path,lastsplit=None): 
     """portable equivalent for os string.split("/")... 
     lastsplit parameter for INTERNAL USE ONLY
