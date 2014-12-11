@@ -32,7 +32,7 @@ from . import canonicalize_xpath_module
 
 canonicalize_path=canonicalize_path_module.canonicalize_path
 relative_path_to=canonicalize_path_module.relative_path_to
-
+pathsplit=canonicalize_path_module.pathsplit
 
 canonicalize_etxpath=canonicalize_xpath_module.canonicalize_etxpath
 getelementetxpath=canonicalize_xpath_module.getelementetxpath
