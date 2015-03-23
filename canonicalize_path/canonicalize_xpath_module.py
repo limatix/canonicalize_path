@@ -18,6 +18,12 @@ from pkg_resources import resource_string
 from .canonicalize_path_module import canonicalize_path
 from .canonicalize_path_module import pathsplit
 
+###***!!! Bug: This module doesn't explicitly define 
+### filename paths as distinct from URLs, so 
+### it will probably fail on Windows.
+###  -- Need to use urllib.pathname2url()
+###     and urllib.url2pathname() to convert
+###     back and forth
 
 
 try: 
@@ -46,6 +52,10 @@ else:
 DBDIR="{http://thermal.cnde.iastate.edu/databrowse/dir}dir"
 DBFILE="{http://thermal.cnde.iastate.edu/databrowse/dir}file"
 
+
+# Canonical ETxpaths are only properly canonical so long as tag_index_paths
+# is consistent (!) so it is generally only safe to rely on them being 
+# canonical if you re-canonicalize them yourself
 
 # Example tag_index_paths.conf:
 # {
@@ -219,6 +229,8 @@ xpath_clarkcvt_match_obj=re.compile(xpath_clarkcvt_match_re)
 # xpath_primconstraint_match_re matches one element of the primary constraint, not including surrounding [] 
 xpath_primconstraint_match_re=r"""([^[\]"'{}]+)|("[^"]*")|('[^']*')|([{][^{}]*[}])"""
 
+# Above expressions also used by canonical_xlink_module.etxpath2xlink
+
 def etxpath2human(etxpath,nsmap):
     # Convert an etxpath into a more human readable xpath using 
     # nsmap. Result may be a mixture of prefix- and Clark notation
@@ -270,13 +282,14 @@ def etxpath2human(etxpath,nsmap):
                 pass
             newprim+="]" # attach trailing close bracket
             pass
-        if newprim=="[1]":
+        if newprim=="[1]":  # BUG: Culling this may not be correct if there are sibling elements with the same tag name or other constraints. For human viewing, it is certainly OK
             newprim=""
             pass
         
         secconstraint=matchobj.group(4)
         newsec=""
         if secconstraint is not None and secconstraint != "[1]":
+            # BUG: Culling the [1] may not be correct if there are sibling elements with the same tag name or other constraints. For human viewing, it is certainly OK
             newsec=secconstraint
             pass
         

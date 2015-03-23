@@ -80,6 +80,9 @@ def rel_or_abs_path(contextdir,destfile,maxdots=1):
     # Determine the relative or absolute path to a known destination file starting from contextdir
     # if there are more than maxdots ".." entries at the start of the relative path, 
     # use the absolute path instead
+    # NOTE: Use of this routine should be avoided because the maxdots 
+    # method of counting parents is dodgy at best
+
     canonpath=canonicalize_path(destfile)
     relpath=relative_path_to(contextdir,canonpath)
 
