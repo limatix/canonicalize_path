@@ -145,7 +145,8 @@ def etxpath2xlink(context_etxpath,etxpath):
     
     # convert buildrevnsmap into forward sorted list
     nsmaplist=[ (nspre[2:],nspre,url) for (url,nspre) in buildrevnsmap.items()]
-    !!!** check how key works !!!***
+    #!!!** check how key works !!!***
+    raise ValueError("check how key works!!!... code not written!")
     nsmaplist.sort(key=0) # sort by prefix index
     nsmapstrings=[ "%s=\"%s\"" % (nspre,url) for (index,nspre,url) in nsmaplist]
     

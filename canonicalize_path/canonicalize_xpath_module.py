@@ -203,6 +203,7 @@ def getelementetxpath(doc,element,root=None,tag_index_paths_override=None):
         else :
             indexstr=""
             pass
+        #sys.stderr.write("element.tag=%s\nindexstr=%s\n" % (element.tag,indexstr))
         ETXindex=etree.ETXPath("%s%s" % (element.tag,indexstr))  # if etree is None here you need to install python-lxml
     
         # Try this index on parent
