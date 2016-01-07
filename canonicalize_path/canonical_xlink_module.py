@@ -1,6 +1,6 @@
 # Canonical xlinks
 #
-# * Canonical xlinks can be relative, but only relative 
+# * Canonical xlinks can be relative, but they can only be relative 
 #   to the containing file, not the source element
 # * They consist of three parts: 
 #     1. File or web path (relative or absolute) -- fully canonical requires an absolute path 
@@ -79,7 +79,7 @@ def etxpath2xlink(context_etxpath,etxpath):
     
     targetetxpathcomponents=canonical_etxpath_split(targetetxpath)
 
-    buildrevnsmap={} # reverse nsmap: mapping to namespace to prefix 
+    buildrevnsmap=collections.OrderedDict() # reverse nsmap: mapping to namespace to prefix 
     buildpath=[]
     nextnsidx=0  # index of next "cn" namespace prefix to add 
 
@@ -122,7 +122,7 @@ def etxpath2xlink(context_etxpath,etxpath):
                         nextnsidx+=1
                         pass
 
-                    const_newpfx=revnsmap[const_clarkpfx[1:-1]]+":"
+                    const_newpfx=buildrevnsmap[const_clarkpfx[1:-1]]+":"
                     newprim+=const_newpfx
                     pass
                 else :
@@ -143,13 +143,11 @@ def etxpath2xlink(context_etxpath,etxpath):
     # xpath component is always absolute
     joinpath=canonical_etxpath_absjoin(*buildpath)
     
-    # convert buildrevnsmap into forward sorted list
-    nsmaplist=[ (nspre[2:],nspre,url) for (url,nspre) in buildrevnsmap.items()]
-    #!!!** check how key works !!!***
-    raise ValueError("check how key works!!!... code not written!")
-    nsmaplist.sort(key=0) # sort by prefix index
-    nsmapstrings=[ "%s=\"%s\"" % (nspre,url) for (index,nspre,url) in nsmaplist]
+    # buildrevnsmap is an ordered dictionary so it is already sorted.
+    nsmaplist=[ (nspre,url) for (url,nspre) in buildrevnsmap.items()]
+
+    nsmapstrings=[ "xmlns(%s=%s)" % (nspre,url) for (nspre,url) in nsmaplist]
     
-    xlink="%s#xpath({%s}%s)" % (targetpath,",".join(nsmapstrings),joinpath)
+    xlink="%s#%sxpath(%s)" % (targetpath,"".join(nsmapstrings),joinpath)
     
     return xlink
