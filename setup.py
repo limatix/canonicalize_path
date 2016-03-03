@@ -31,7 +31,7 @@ def setuptools_command_bdist_egg_call_command_hotfix(self, cmdname, **kw):
 setuptools_version=tuple([int(versionpart) for versionpart in setuptools.__version__.split(".")])
 
 # Apply hotfix to all versions prior to 20.2
-if setuptools.version < (20,2):
+if setuptools_version < (20,2):
     setuptools.command.bdist_egg.call_command=setuptools_command_bdist_egg_call_command_hotfix
     pass
 
