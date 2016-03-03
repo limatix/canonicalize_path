@@ -42,12 +42,11 @@ except IOError:
 
 
 
-if __install_prefix__=="/usr": 
-    config_dir='/etc/canonicalize_path'
-    pass
-else:
-    config_dir=os.path.join(__install_prefix__,"etc","canonicalize_path")
-    pass
+#if __install_prefix__=="/usr": 
+#    config_dir='/etc/canonicalize_path'
+#    pass
+#else:
+config_dir=os.path.join(__install_prefix__,"etc","canonicalize_path")
 
 DBDIR="{http://thermal.cnde.iastate.edu/databrowse/dir}dir"
 DBFILE="{http://thermal.cnde.iastate.edu/databrowse/dir}file"

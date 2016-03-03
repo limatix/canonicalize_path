@@ -1,11 +1,38 @@
 import shutil
 import os.path
-from distutils.core import setup,Extension
-from distutils.command.install_lib import install_lib
-from distutils.command.install import install
+from setuptools import setup
+from setuptools.command.install_lib import install_lib
+from setuptools.command.install import install
+import setuptools.command.bdist_egg
 import sys
 
 config_files=["canonical_paths.conf","tag_index_paths.conf"]
+
+
+# Apply hotfix to setuptools issue #130, from 
+# https://bitbucket.org/pypa/setuptools/issues/130/install_data-doesnt-respect-prefix
+# hotfix applies at least to all versions prior to 20.2
+
+def setuptools_command_bdist_egg_call_command_hotfix(self, cmdname, **kw):
+    """Invoke reinitialized command `cmdname` with keyword args"""
+    if cmdname != 'install_data':
+        for dirname in INSTALL_DIRECTORY_ATTRS:
+            kw.setdefault(dirname, self.bdist_dir)
+    kw.setdefault('skip_build', self.skip_build)
+    kw.setdefault('dry_run', self.dry_run)
+    cmd = self.reinitialize_command(cmdname, **kw)
+    self.run_command(cmdname)
+    return cmd
+
+setuptools_version=tuple([int(versionpart) for versionpart in setuptools.__version__.split(".")])
+
+# Apply hotfix to all versions prior to 20.2
+if setuptools.version < (20,2):
+    setuptools.command.bdist_egg.call_command=setuptools_command_bdist_egg_call_command_hotfix
+    pass
+
+
+
 
 class install_lib_save_prefix(install_lib):
     """Save a file install_prefix.txt with the install prefix"""
@@ -27,39 +54,42 @@ class install_lib_save_prefix(install_lib):
     pass
 
 
-class install_config_files(install):
-    """store config files in PREFIX/etc"""
-    def run(self):
-        install.run(self)
+#class install_config_files(install):
+#    """store config files in PREFIX/etc"""
+#    def run(self):
+#        install.run(self)
         
-        #sys.stderr.write("\nprefix:" + str((self.distribution.command_obj["install"].prefix))+"\n\n\n")
-        
-        if self.prefix=="/usr": 
-            config_dir='/etc/canonicalize_path'
-            pass
-        else:
-            config_dir=os.path.join(self.prefix,"etc","canonicalize_path")
-            pass
-
-        if not os.path.exists(config_dir):
-            os.mkdir(config_dir)
-            pass
-
-        for configfile in config_files:
-            if os.path.exists(os.path.join(config_dir,configfile)):
-                os.remove(os.path.join(config_dir,configfile))
-                pass
-            shutil.copyfile(configfile,os.path.join(config_dir,configfile))
-            pass
-            
-        pass
-    pass
+#        #sys.stderr.write("\nprefix:" + str((self.distribution.command_obj["install"].prefix))+"\n\n\n")
+#        
+#        if self.prefix=="/usr": 
+#            config_dir='/etc/canonicalize_path'
+#            pass
+#        else:
+#            config_dir=os.path.join(self.prefix,"etc","canonicalize_path")
+#            pass
+#
+#        if not os.path.exists(config_dir):
+#            os.mkdir(config_dir)
+#            pass
+#
+#        for configfile in config_files:
+#            if os.path.exists(os.path.join(config_dir,configfile)):
+#                os.remove(os.path.join(config_dir,configfile))
+#                pass
+#            shutil.copyfile(configfile,os.path.join(config_dir,configfile))
+#            pass
+#            
+#        pass
+#    pass
 
 setup(name="canonicalize_path",
       description="path canonicalization",
       author="Stephen D. Holland",
       # url="http://thermal.cnde.iastate.edu/dataguzzler",
       packages=["canonicalize_path"],
-      cmdclass={"install_lib": install_lib_save_prefix,
-                "install": install_config_files})
+      cmdclass={"install_lib": install_lib_save_prefix},
+      data_files=[ ('etc/canonicalize_path',config_files) ])
+#"install": install_config_files
+
+
 
