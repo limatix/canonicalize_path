@@ -42,7 +42,7 @@ except IOError:
 
 try: 
     canonical_paths=open(os.path.join(config_dir,"canonical_paths.conf"),"rb")
-    exec(u'canon_override.update(='+canonical_paths.read().decode('utf-8')+')')
+    exec(u'canon_override.update('+canonical_paths.read().decode('utf-8')+')')
     canonical_paths.close()
     pass
 except IOError:
