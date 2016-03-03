@@ -65,25 +65,24 @@ DBFILE="{http://thermal.cnde.iastate.edu/databrowse/dir}file"
 # }
 
 
+try: 
+    tag_index_paths_conf_str=resource_string(__name__, 'tag_index_paths.conf').decode('utf-8')
+    exec(u'tag_index_paths='+tag_index_paths_conf_str)
+    pass
+except IOError:
+    sys.stderr.write("canonicalize_path_module: Error reading internal config file %s.\n" % ( "tag_index_paths.conf"))
+    pass
+
 try:
     tag_index_paths_conf=open(os.path.join(config_dir,"tag_index_paths.conf"),"rb")
-    exec(u'tag_index_paths='+tag_index_paths_conf.read().decode('utf-8'))
+    exec(u'tag_index_paths.update('+tag_index_paths_conf.read().decode('utf-8')+')')
     tag_index_paths_conf.close()
     pass
 except IOError:
-    sys.stderr.write("canonicalize_xpath_module: Error reading config file %s.\n" % ( os.path.join(config_dir,"tag_index_paths.conf")))
+    #sys.stderr.write("canonicalize_xpath_module: Error reading config file %s.\n" % ( os.path.join(config_dir,"tag_index_paths.conf")))
     pass
 
 
-try: 
-    tag_index_paths_local_conf=open(os.path.join(config_dir,"tag_index_paths_local.conf"),"rb")
-    exec(u'tag_index_paths.update('+tag_index_paths_local_conf.read().decode('utf-8')+')')
-    tag_index_paths_local_conf.close()
-    pass
-except IOError:
-    sys.stderr.write("canonicalize_xpath_module: Warning: No local config file %s.\n" % ( os.path.join(config_dir,"tag_index_paths_local.conf")))
-    pass
-    
 
 def string_to_etxpath_expression(strval):
     """Converts a string into a valid ETXPath expression.

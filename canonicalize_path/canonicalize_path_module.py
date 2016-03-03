@@ -32,25 +32,24 @@ except IOError:
 config_dir=os.path.join(__install_prefix__,"etc","canonicalize_path")
 
 
+try: 
+    canonical_paths_conf=resource_string(__name__, 'canonical_paths.conf').decode('utf-8')
+    exec(u'canon_override='+canonical_paths_conf)
+    pass
+except IOError:
+    sys.stderr.write("canonicalize_path_module: Error reading internal config file %s.\n" % ( "canonical_paths.conf"))
+    pass
 
 try: 
     canonical_paths=open(os.path.join(config_dir,"canonical_paths.conf"),"rb")
-    exec(u'canon_override='+canonical_paths.read().decode('utf-8'))
+    exec(u'canon_override.update(='+canonical_paths.read().decode('utf-8')+')')
     canonical_paths.close()
     pass
 except IOError:
-    sys.stderr.write("canonicalize_path_module: Error reading config file %s.\n" % ( os.path.join(config_dir,"canonical_paths.conf")))
+    # No config file found
+    #sys.stderr.write("canonicalize_path_module: Error reading config file %s.\n" % ( os.path.join(config_dir,"canonical_paths.conf")))
     pass
 
-
-try: 
-    canonical_paths_local=open(os.path.join(config_dir,"canonical_paths_local.conf"),"rb")
-    exec(u'canon_override.update('+canonical_paths_local.read().decode('utf-8')+')')
-    canonical_paths_local.close()
-    pass
-except IOError:
-    sys.stderr.write("canonicalize_path_module: Warning: No local config file %s.\n" % ( os.path.join(config_dir,"canonical_paths_local.conf")))
-    pass
     
 
 def canonicalize_relpath(contextdir,relpath):

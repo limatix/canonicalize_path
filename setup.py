@@ -6,7 +6,8 @@ from setuptools.command.install import install
 import setuptools.command.bdist_egg
 import sys
 
-config_files=["canonical_paths.conf","tag_index_paths.conf"]
+config_files=["canonical_paths.conf.example","tag_index_paths.conf.example"]
+package_files=["canonical_paths.conf","tag_index_paths.conf"]
 
 # NOTE ***: config files will be installed to prefix/etc/canonicalize_path/
 # By default, prefix is /usr so configfiles to be found in
@@ -91,7 +92,9 @@ setup(name="canonicalize_path",
       # url="http://thermal.cnde.iastate.edu/dataguzzler",
       packages=["canonicalize_path"],
       cmdclass={"install_lib": install_lib_save_prefix},
-      data_files=[ (os.path.join('etc','canonicalize_path'),config_files) ])
+      data_files=[ (os.path.join('etc','canonicalize_path'),config_files) ],
+      package_data={"canonicalize_path": package_files })
+
 #"install": install_config_files
 
 
