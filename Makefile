@@ -2,8 +2,8 @@ all:
 	python setup.py build
 
 install:
-	python setup.py install --prefix=/usr/local
-	python setup.py install_data --prefix=/usr/local
+	python setup.py --prefix=/usr/local install
+	python setup.py --prefix=/usr/local install_data
 
 clean:
 	python setup.py clean
