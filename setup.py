@@ -8,10 +8,13 @@ import sys
 
 config_files=["canonical_paths.conf","tag_index_paths.conf"]
 
+# NOTE ***: config files will be installed to prefix/etc/canonicalize_path/
+# By default, prefix is /usr so configfiles to be found in
+# /usr/etc/canonicalize_path!
 
 # Apply hotfix to setuptools issue #130, from 
 # https://bitbucket.org/pypa/setuptools/issues/130/install_data-doesnt-respect-prefix
-# hotfix applies at least to all versions prior to 20.2
+# hotfix applies at least to all setuptools versions prior to 20.2
 
 def setuptools_command_bdist_egg_call_command_hotfix(self, cmdname, **kw):
     """Invoke reinitialized command `cmdname` with keyword args"""
@@ -88,7 +91,7 @@ setup(name="canonicalize_path",
       # url="http://thermal.cnde.iastate.edu/dataguzzler",
       packages=["canonicalize_path"],
       cmdclass={"install_lib": install_lib_save_prefix},
-      data_files=[ ('etc/canonicalize_path',config_files) ])
+      data_files=[ (os.path.join('etc','canonicalize_path'),config_files) ])
 #"install": install_config_files
 
 
