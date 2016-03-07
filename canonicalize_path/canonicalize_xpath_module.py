@@ -4,9 +4,22 @@ import string
 import re
 import copy
 
+
+try: 
+    import builtins  # python3
+    pass
+except ImportError: 
+    import __builtin__ as builtins # python2
+    pass
+
+
+if not hasattr(builtins,"basestring"):
+    basestring=str  # python3
+    pass
 try:
     import collections.abc as collections_abc  # python 3.3 and above
     pass
+
 except ImportError:
     import collections as collections_abc # < python 3.3
     pass
@@ -118,7 +131,7 @@ def string_to_etxpath_expression(strval):
     splitstr=strval.split("\"") # split into segments that don't have double quotes
     
     quotedsplitstr=["\""+component+"\"" for component in splitstr] # Put quotes around each segment
-    return "concat(%s)" % (string.join(quotedsplitstr,",'\"',")) # Join with double quotes and return in a concat expression
+    return "concat(%s)" % (",'\"',".join(quotedsplitstr)) # Join with double quotes and return in a concat expression
 
     
 
@@ -362,7 +375,7 @@ def filepath_to_etxpath(canonical_filepath):
         pathcomponents.insert(0,'') # force leading slash after join
         pass
 
-    filexpath=string.join(pathcomponents,'/')
+    filexpath="/".join(pathcomponents)
     
     return filexpath
 
@@ -431,14 +444,14 @@ def canonical_etxpath_split(fullxpath):
 
 def canonical_etxpath_join(*components):
     # Does NOT supply additional leading "/" to make the path absolute
-    return string.join(components,"/")    
+    return "/".join(components)    
 
 def canonical_etxpath_absjoin(*components):
     # DOES  supply leading "/" to make the path absolute
     components=list(components)
     components.insert(0,"")
     # print components
-    return string.join(components,"/")
+    return "/".join(components)
     
 # check format of primary constraint
 # should be name="quotedstring" name='quotedstring'
@@ -512,7 +525,7 @@ def canonical_etxpath_break_out_file(fullxpath):
                 else: # concat 
                     assert(concatconstraint is not None)
                     # assemble concatconstraint
-                    filepath=os.path.join(filepath,string.join([matchobj.group(1) for matchobj in re.finditer(concat_match_re,concatconstraint)],""))
+                    filepath=os.path.join(filepath,"".join([matchobj.group(1) for matchobj in re.finditer(concat_match_re,concatconstraint)]))
                     pass
                 compnum+=1
                 continue
@@ -521,7 +534,7 @@ def canonical_etxpath_break_out_file(fullxpath):
         pass
     
     if len(components) > compnum:
-        xpath = "/"+ string.join(components[compnum:],"/")
+        xpath = "/"+ "/".join(components[compnum:])
         pass
 
     return (filepath,xpath)
