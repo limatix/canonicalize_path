@@ -1,8 +1,15 @@
-
-from pkg_resources import resource_string
-
 import sys
 import os.path
+
+try: 
+    from pkg_resources import resource_string
+    pass
+except:
+    resource_string=None
+    sys.stderr.write("canonicalize_path_module: Error importing pkg_resources (is package properly installed?)\n")
+    pass
+
+canon_override={}
 
 #canon_override={  # don't include excess path separators 
 #    "/sata4/databrowse": "/databrowse",
@@ -20,7 +27,7 @@ import os.path
 try: 
     __install_prefix__=resource_string(__name__, 'install_prefix.txt').decode('utf-8')
     pass
-except IOError: 
+except (IOError, TypeError): 
     sys.stderr.write("canonicalize_path_module: error reading install_prefix.txt. Assuming /usr/local.\n")
     __install_prefix__="/usr/local"
     pass
@@ -36,7 +43,7 @@ try:
     canonical_paths_conf=resource_string(__name__, 'canonical_paths.conf').decode('utf-8')
     exec(u'canon_override='+canonical_paths_conf)
     pass
-except IOError:
+except (IOError,TypeError):
     sys.stderr.write("canonicalize_path_module: Error reading internal config file %s.\n" % ( "canonical_paths.conf"))
     pass
 
@@ -45,7 +52,7 @@ try:
     exec(u'canon_override.update('+canonical_paths.read().decode('utf-8')+')')
     canonical_paths.close()
     pass
-except IOError:
+except (IOError,NameError):
     # No config file found
     #sys.stderr.write("canonicalize_path_module: Error reading config file %s.\n" % ( os.path.join(config_dir,"canonical_paths.conf")))
     pass

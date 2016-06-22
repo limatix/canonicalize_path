@@ -24,7 +24,13 @@ except ImportError:
     import collections as collections_abc # < python 3.3
     pass
 
-from pkg_resources import resource_string
+try:
+    from pkg_resources import resource_string
+    pass
+except:
+    resource_string=None
+    sys.stderr.write("canonicalize_xpath_module: Error importing pkg_resources (is package properly installed?)\n")
+    pass
 
 
 
@@ -48,7 +54,7 @@ except ImportError:
 try: 
     __install_prefix__=resource_string(__name__, 'install_prefix.txt').decode('utf-8')
     pass
-except IOError: 
+except (IOError,TypeError): 
     sys.stderr.write("canonicalize_xpath_module: error reading install_prefix.txt. Assuming /usr/local.\n")
     __install_prefix__="/usr/local"
     pass
@@ -82,7 +88,7 @@ try:
     tag_index_paths_conf_str=resource_string(__name__, 'tag_index_paths.conf').decode('utf-8')
     exec(u'tag_index_paths='+tag_index_paths_conf_str)
     pass
-except IOError:
+except (IOError,TypeError):
     sys.stderr.write("canonicalize_path_module: Error reading internal config file %s.\n" % ( "tag_index_paths.conf"))
     pass
 
@@ -91,7 +97,7 @@ try:
     exec(u'tag_index_paths.update('+tag_index_paths_conf.read().decode('utf-8')+')')
     tag_index_paths_conf.close()
     pass
-except IOError:
+except (IOError,NameError):
     #sys.stderr.write("canonicalize_xpath_module: Error reading config file %s.\n" % ( os.path.join(config_dir,"tag_index_paths.conf")))
     pass
 
@@ -226,16 +232,16 @@ def getelementetxpath(doc,element,root=None,tag_index_paths_override=None):
         return "%s/%s" % (pathprefix,pathel)
     pass
  
-
-# /({[^}]+})?     Optional Clark notation
-# ([^[\]/]+)      Tag name
+# (@?) optional this-is-an-attribute
+# ({[^}]+})?     Optional Clark notation
+# ([^[\]{}@/]+)      Tag name
 # (?:([[] ... []])([[]\d+[]])?)?   Optional Constraint plus Optional Integer Constraint
 # [^[\]"'{}]+     Constraint content no quotes or braces
 # "[^"]*"         Double Quoted string
 # '[^']*'         Single quoted string
 # [{][^{}]*[}]    Clark notation string
 # (?:(?:[^[\]"'{}]+)|(?:"[^"]*")|(?:'[^']*')|(?:[{][^{}]*[}]))+  Constraint content w/quotes and/or Clark notation
-xpath_clarkcvt_match_re=r"""({[^}]+})?([^[\]/]+)(?:([[](?:(?:[^[\]"'{}]+)|(?:"[^"]*")|(?:'[^']*')|(?:[{][^{}]*[}]))+[]])([[]\d+[]])?)?"""
+xpath_clarkcvt_match_re=r"""(@?)({[^}]+})?([^[\]{}@/]+)(?:([[](?:(?:[^[\]"'{}]+)|(?:"[^"]*")|(?:'[^']*')|(?:[{][^{}]*[}]))+[]])([[]\d+[]])?)?"""
 xpath_clarkcvt_match_obj=re.compile(xpath_clarkcvt_match_re)
 
 # xpath_primconstraint_match_re matches one element of the primary constraint, not including surrounding [] 
@@ -256,8 +262,9 @@ def etxpath2human(etxpath,nsmap):
     buildpath=[]
     for pathentry in splitpath:
         matchobj=xpath_clarkcvt_match_obj.match(pathentry)
-        # group(1) is Clark prefix, group(2) is tag, group(3) is primary constraint, group(4) is secondary constraint
-        clarkpfx=matchobj.group(1)
+        # group(1) is optional '@' group(2) is Clark prefix, group(3) is tag, group(4) is primary constraint, group(5) is secondary constraint
+        optionalatsign=matchobj.group(1)
+        clarkpfx=matchobj.group(2)
         newpfx=""
         if clarkpfx is not None:
             if clarkpfx[1:-1] in revnsmap:
@@ -268,10 +275,10 @@ def etxpath2human(etxpath,nsmap):
                 pass
             pass
         
-        newtag=matchobj.group(2)
+        newtag=matchobj.group(3)
         # print("newtag=",newtag)
 
-        primconstraint=matchobj.group(3)
+        primconstraint=matchobj.group(4)
         newprim=""
         if primconstraint is not None:
             newprim+="["
@@ -298,14 +305,14 @@ def etxpath2human(etxpath,nsmap):
             newprim=""
             pass
         
-        secconstraint=matchobj.group(4)
+        secconstraint=matchobj.group(5)
         newsec=""
         if secconstraint is not None and secconstraint != "[1]":
             # BUG: Culling the [1] may not be correct if there are sibling elements with the same tag name or other constraints. For human viewing, it is certainly OK
             newsec=secconstraint
             pass
         
-        buildpath.append(newpfx+newtag+newprim+newsec)
+        buildpath.append(optionalatsign+newpfx+newtag+newprim+newsec)
         pass
 
     if etxpath_isabs(etxpath):
@@ -410,19 +417,20 @@ def create_canonical_etxpath(filepath,doc,element):
 
 
 # Only accepts reduced xpath from our canonical xpath generator
-
-# /({[^}]+})?     Optional Clark notation
+# (@?)           Optional at-sign
+# ({[^}]+})?     Optional Clark notation
 # ([^[\]/]+)      Tag name
 # (?:([[] ... []])([[]\d+[]])?)?   Optional Constraint plus Optional Integer Constraint
 # [^[\]"']+      Constraint content no quotes
 # "[^"]*"         Double Quoted string
 # '[^']*'         Single quoted string
 # (?:(?:[^[\]"']+)|(?:"[^"]*")|(?:'[^']*'))+  Constraint content w/quotes
-xpath_component_match_re=r"""({[^}]+})?([^[\]/]+)(?:([[](?:(?:[^[\]"']+)|(?:"[^"]*")|(?:'[^']*'))+[]])([[]\d+[]])?)?"""
+xpath_component_match_re=r"""(@?)({[^}]+})?([^[\]/]+)(?:([[](?:(?:[^[\]"']+)|(?:"[^"]*")|(?:'[^']*'))+[]])([[]\d+[]])?)?"""
 xpath_component_match_obj=re.compile(xpath_component_match_re)
+xpath_slashcomponent_match_obj=re.compile("/"+xpath_component_match_re)
 
 def canonical_etxpath_split(fullxpath):
-    """Split xpath into individual xpath components
+    """Split etxpath into individual xpath components
     Only accepts ximple paths and reduced xpath from our canonical 
     xpath generator, not full general XPath queries"""
 
@@ -430,11 +438,23 @@ def canonical_etxpath_split(fullxpath):
     
     text=""
     components=[]
-    for matchobj in re.finditer("/"+xpath_component_match_re,fullxpath):
+
+    fullxpath=fullxpath.strip()
+
+    absolute=fullxpath[0]=='/'
+
+    if not absolute:
+        fullxpath="/"+fullxpath  # put leading slash for parsing        
+        pass
+    else:
+        components.append("")  # blank leading component represents absolute path
+        pass
+    
+    for matchobj in xpath_slashcomponent_match_obj.finditer(fullxpath):
         # for matchobj in re.finditer(r"""/({[^}]+})?([^[\]/]+)([[](?:(?:[^[\]/"']+)|(?:"[^"]*")|(?:'[^']*'))+[]])([[]\d+[]])?""",fullxpath):
         if matchobj is None: 
             raise SyntaxError("XPath parsing \"%s\" after \"%s\"." % (fullxpath,text))
-        # group(1) is Clark prefix, group(2) is tag, group(3) is primary constraint, group(4) is secondary constraint
+        # group(1) is optional at-sign; group(2) is Clark prefix, group(3) is tag, group(4) is primary constraint, group(5) is secondary constraint
         match=matchobj.group(0)
         text+=match
         components.append(match[1:]) # append to path component list, but drop '/'
@@ -496,12 +516,19 @@ def canonical_etxpath_break_out_file(fullxpath):
     
     xpath=""
 
-    compnum=0
+
+    assert(components[0]=='') # absolute path
+    
+    compnum=1
     while isdir:
         component=components[compnum]
+        # print components
+        # print component
         matchobj=xpath_component_match_obj.match(component)
-        (clarkpfx,tag,primconstraint,secconstraint)=matchobj.groups()
+        (optionalatsign,clarkpfx,tag,primconstraint,secconstraint)=matchobj.groups()
         # print matchobj.groups()
+        
+        assert(optionalatsign=="")
         
         if (clarkpfx=="{http://thermal.cnde.iastate.edu/databrowse/dir}" and
             (tag=="dir" or tag=="file") and (secconstraint is None or secconstraint=="[1]")):
