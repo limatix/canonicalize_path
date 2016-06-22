@@ -276,6 +276,9 @@ def etxpath2xpointer(context_etxpath,etxpath,desired_nsmap=None):
 
 
 def etxpath2xlink(context_etxpath,etxpath,desired_nsmap=None):
+    #  ... This is obsolete because it uses etxpaths to cover the
+    # file portion... and probably shouldn't be (isn't) used.
+    
     # Note: any relative etxpath required to get to the root
     # of the context file will be truncated!
     

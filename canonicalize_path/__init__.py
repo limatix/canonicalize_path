@@ -29,6 +29,7 @@ except ImportError:
 
 from . import canonicalize_path_module
 from . import canonicalize_xpath_module
+from . import canonical_url
 
 canonicalize_relpath=canonicalize_path_module.canonicalize_relpath
 canonicalize_filelist=canonicalize_path_module.canonicalize_filelist
@@ -53,3 +54,8 @@ etxpath_isabs=canonicalize_xpath_module.etxpath_isabs
 etxpath_resolve_dots=canonicalize_xpath_module.etxpath_resolve_dots
 join_relative_etxpath=canonicalize_xpath_module.join_relative_etxpath
 relative_etxpath_to=canonicalize_xpath_module.relative_etxpath_to
+
+
+etxpath2xpointer=canonical_url.etxpath2xpointer
+href_fragment=canonical_url.href_fragment
+href_context=canonical_url.href_context
