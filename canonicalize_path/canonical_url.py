@@ -735,7 +735,7 @@ class href_fragment(object):
         return self.unquoted_string
 
 
-    def get_human(self)
+    def get_human(self):
         if self.unquoted_string is None:
             self.assemble()
             pass
