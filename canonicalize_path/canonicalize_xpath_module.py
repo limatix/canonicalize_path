@@ -257,10 +257,19 @@ def etxpath2human(etxpath,nsmap):
     # reverse namespace mapping
     revnsmap=dict((url,nspre) for nspre,url in nsmap.items() if nspre is not None)
 
+    # print("etxpath2human: %s; nsmap=%s" % (etxpath,str(nsmap)))
+    
     splitpath=canonical_etxpath_split(etxpath)
+    # print("etxpath2human: splitpath=%s" % (splitpath))
 
     buildpath=[]
     for pathentry in splitpath:
+        # print("etxpath2human: pathentry=%s" % (pathentry))
+        if len(pathentry)==0:
+            # blank entry... indicates first entry of absolute path
+            buildpath.append("")
+            continue
+        
         matchobj=xpath_clarkcvt_match_obj.match(pathentry)
         # group(1) is optional '@' group(2) is Clark prefix, group(3) is tag, group(4) is primary constraint, group(5) is secondary constraint
         optionalatsign=matchobj.group(1)
@@ -301,26 +310,25 @@ def etxpath2human(etxpath,nsmap):
                 pass
             newprim+="]" # attach trailing close bracket
             pass
-        if newprim=="[1]":  # BUG: Culling this may not be correct if there are sibling elements with the same tag name or other constraints. For human viewing, it is certainly OK
-            newprim=""
-            pass
+        #if newprim=="[1]":  # BUG: Culling this may not be correct if there are sibling elements with the same tag name or other constraints. For human viewing, it is certainly OK
+        #    newprim=""
+        #    pass
         
         secconstraint=matchobj.group(5)
         newsec=""
-        if secconstraint is not None and secconstraint != "[1]":
-            # BUG: Culling the [1] may not be correct if there are sibling elements with the same tag name or other constraints. For human viewing, it is certainly OK
+        #if secconstraint is not None and secconstraint != "[1]":
+        #    # BUG: Culling the [1] may not be correct if there are sibling elements with the same tag name or other constraints. For human viewing, it is certainly OK
+        if secconstraint is not None:
             newsec=secconstraint
             pass
         
         buildpath.append(optionalatsign+newpfx+newtag+newprim+newsec)
         pass
 
-    if etxpath_isabs(etxpath):
-        joinpath=canonical_etxpath_absjoin(*buildpath)
-        pass
-    else : 
-        joinpath=canonical_etxpath_join(*buildpath)
-        pass
+    joinpath=canonical_etxpath_join(*buildpath)
+
+    # print("etxpath2human: joinpath=%s" % (joinpath))
+
     return joinpath
 
 

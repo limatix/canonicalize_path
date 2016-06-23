@@ -50,6 +50,8 @@
 # unlike dc_value.hrefvalue
 
 
+### ***NOTE*** We are technically dealing with IRI's here, not URI's or URL's. 
+
 
 import sys
 import os
@@ -165,7 +167,7 @@ def caratescape(unescaped):
     pass
 
 
-def etxpath2xpointer(context_etxpath,etxpath,desired_nsmap=None):
+def etxpath2xpointer(context_etxpath,etxpath,desired_nsmap=None,no_nsmap=False,no_caratescape=False):
     # Gives canonical xpointer form if
     #   1. etxpath is absolute and canonicalized
     #   2. desired_nsmap is NOT given
@@ -281,7 +283,20 @@ def etxpath2xpointer(context_etxpath,etxpath,desired_nsmap=None):
 
     nsmapstrings=[ "xmlns(%s=%s)" % (nspre,caratescape(url)) for (nspre,url) in nsmaplist]
 
-    xpointer="%sxpath1(%s)" % ("".join(nsmapstrings),caratescape(joinpath))
+    if no_caratescape:
+        caratescapefunc=lambda xp: xp
+        pass
+    else:
+        caratescapefunc=caratescape
+        pass
+    
+
+    if no_nsmap:
+        xpointer="xpath1(%s)" % (caratescapefunc(joinpath))
+        pass
+    else:
+        xpointer="%sxpath1(%s)" % ("".join(nsmapstrings),caratescapefunc(joinpath))
+        pass
     return xpointer
 
 
@@ -597,9 +612,14 @@ class href_fragment(object):
     # element by id, and also fragments that identify
     # by XPointer with xmlns() and xpath() schemes
 
+    # Note that this, too, is final, although
+    # cached results may be stored after original creation
+    
     type=None  # See TYPE_xxxx values below
 
     unquoted_string=None # for TYPE_UNANALYZED non-url-quoted string
+    human_readable=None # cached human readable result
+    
     id=None # for TYPE_ID
 
     schemes_and_params=None # list of (nsmap, scheme, params) , for TYPE_XPOINTER_UNKNOWN. params are un-carat-escaped
@@ -614,7 +634,7 @@ class href_fragment(object):
                               # dependent on xmlns() state 
     TYPE_CONSTRAINED_XPATH = 3 # Limited XPath structure used by canonical_xpath module. Permits better canonicalization 
     
-
+    
     
     
     def __init__(self,fragment,etxpath=None,nsmap=None):
@@ -638,7 +658,7 @@ class href_fragment(object):
     def from_constrained_etxpath(cls,etxpath,nsmap=None):
         return href_fragment(None,etxpath=etxpath,nsmap=nsmap)
     
-    def analyze(self):
+    def analyze(self):  # private method
 
         if self.type!=self.TYPE_UNANALYZED:
             return
@@ -705,7 +725,11 @@ class href_fragment(object):
             
         pass
 
-    def assemble(self):
+    def assemble(self): # private method
+        if self.type==self.TYPE_UNANALYZED:
+            self.analyze()
+            pass
+
         # Re-assemble fragment according to type
         if self.type==self.TYPE_ID:
             self.unquoted_string=self.id
@@ -717,14 +741,34 @@ class href_fragment(object):
             self.unquoted_string=etxpath2xpointer(None,self.etxpath,desired_nsmap=self.nsmap)
             
             pass
-        elif self.type==self.TYPE_UNANALYZED:
-            # nothing to do
+        else:
+            assert(0)
+            pass
+        pass
+
+
+
+    def assemble_human_readable(self): # private method
+        if self.type==self.TYPE_UNANALYZED:
+            self.analyze()
+            pass
+
+        # Re-assemble fragment according to type
+        if self.type==self.TYPE_ID:
+            self.human_readable=self.id
+            pass
+        elif self.type==self.TYPE_XPOINTER_UNKNOWN:
+            self.human_readable="".join([ schemename+schemeparams for (nsmap_overrides,schemename,schemeparams) in self.schemes_and_params ])
+            pass
+        elif self.type==self.TYPE_CONSTRAINED_XPATH:
+            self.human_readable=etxpath2xpointer(None,self.etxpath,desired_nsmap=self.nsmap,no_nsmap=True,no_caratescape=True)
+            
             pass
         else:
             assert(0)
             pass
         pass
-    
+
     
     def get_fragment(self):
         if self.unquoted_string is None:
@@ -736,15 +780,11 @@ class href_fragment(object):
 
 
     def get_human(self):
-        if self.unquoted_string is None:
-            self.assemble()
+        if self.human_readable is None:
+            self.assemble_human_readable()
             pass
-        # For the moment, just return the regular result
-        # This should be modified to eliminate namespace prefixes!!!
-        
-        # return non-url-quoted string
-        return self.unquoted_string
-    
+        return self.human_readable
+            
     def get_canonical(self):
         self.analyze()
 
@@ -784,11 +824,25 @@ class href_fragment(object):
                 return result_set
             raise ValueError("Unknown XPointer scheme in fragment %s" % (self.unquoted_string))
         
-        elif type==self.TYPE_CONSTRAINED_XPATH:
+        elif self.type==self.TYPE_CONSTRAINED_XPATH:
             result_set=xmldocu.etxpath(self.etxpath,contextnode=refelement,noprovenance=noprovenance)
             return result_set
         else:
             assert(0) # unknown type!!!
+        pass
+
+    def __str__(self):
+        if self.type==self.TYPE_UNANALYZED:
+            return "href_fragment UNANALYZED %s" % (self.unquoted_string)
+        elif self.type==self.TYPE_ID:
+            return "href_fragment ID %s" % (self.id)
+        elif self.type==self.TYPE_XPOINTER_UNKNOWN:
+            return "href_fragment XPOINTER_UNKNOWN %s" % (str(self.schemes_and_params))
+        elif self.type==self.TYPE_CONSTRAINED_XPATH:
+            return "href_fragment CONSTRAINED_XPATH %s" % (self.etxpath)
+        else:
+            return "href_fragment INVALID_TYPE"
+        
         pass
     pass
 
@@ -924,15 +978,15 @@ class href_context(object):
                         # Extract fragment
                         (thiscontext,fragment)=urldefrag(thiscontext)
                         pass
-
-                    if isinstance(fragment,basestring):
-                        self.fragment=href_fragment(unquote(fragment))
-                        pass
-                    else:  # parsed fragment
-                        self.fragment=fragment
-                        pass
-                    
                     pass
+                
+                if isinstance(fragment,basestring):
+                    self.fragment=href_fragment(unquote(fragment))
+                    pass
+                else:  # parsed fragment
+                    self.fragment=fragment
+                    pass
+                    
                 pass
             
             if foundabspath and parsed.scheme=='':
@@ -986,6 +1040,30 @@ class href_context(object):
             return ""
         return self.absurl()
 
+    def humanurl(self):
+        #if self.humanurl_cache is not None:
+        #    return self.humanurl_cache
+        
+        
+        # returns full escaped URL with complete context
+        if len(self.contextlist)==0:
+            return "."
+        if self.contextlist is None:
+            return ""
+        
+
+        URL=""
+        if self.fragment is not None:
+            URL="#"+self.fragment.get_human()
+            pass
+        
+        for pos in range(len(self.contextlist)-1,-1,-1):
+            URL=urljoin(self.contextlist[pos],URL)
+            pass
+        
+        # self.humanurl_cache=URL
+        return URL
+    
     
     def absurl(self) :
         if self.absurl_cache is not None:
@@ -1001,7 +1079,7 @@ class href_context(object):
 
         URL=""
         if self.fragment is not None:
-            URL=quote("#"+self.fragment.get_fragment())
+            URL="#"+quote(self.fragment.get_fragment(),safe="()/")
             pass
         
         for pos in range(len(self.contextlist)-1,-1,-1):
@@ -1049,7 +1127,7 @@ class href_context(object):
         our_URL=""
         our_fragment=""
         if self.fragment is not None:
-            our_fragment=quote("#"+self.fragment.get_fragment())
+            our_fragment="#"+quote(self.fragment.get_fragment(),safe="()/")
             pass
 
             
@@ -1269,7 +1347,7 @@ class href_context(object):
     def getquotedfragment(self):
         if self.fragment is None:
             return ""
-        return quote("#"+self.fragment.get_fragment())
+        return "#"+quote(self.fragment.get_fragment(),safe="()/")
 
 
     def fragless(self):
@@ -1367,7 +1445,7 @@ class href_context(object):
 
         URL=""
         if self.fragment is not None:
-            URL=quote("#"+self.fragment.get_canonical())
+            URL="#"+quote(self.fragment.get_canonical(),safe="()/")
             pass
 
 
@@ -1393,8 +1471,15 @@ class href_context(object):
         filehref=xmldocu.get_filehref().value()
         etxpath=getelementetxpath(xmldocu.doc,element,tag_index_paths_override=tag_index_paths_override)
 
+        # print("fromelement: etxpath=%s" % (etxpath))
+
+
+        # print ("fromelement: fragment=%s" % (str(href_fragment.from_constrained_etxpath(etxpath,element.nsmap))))
         href=href_context(filehref,fragment=href_fragment.from_constrained_etxpath(etxpath,element.nsmap))
 
+        # print("fromelement: href=%s" % (href.absurl()))
+        # print("fromelement: href.fragment=%s" % (str(href.fragment)))
+        
         return href
 
     @classmethod
