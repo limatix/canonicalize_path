@@ -91,6 +91,16 @@ except ImportError:
     from urllib.parse import urldefrag
     pass
 
+try: 
+    import builtins  # python3
+    pass
+except ImportError: 
+    import __builtin__ as builtins # python2
+    pass
+
+if not hasattr(builtins,"basestring"):
+    basestring=str  # python3
+    pass
 
 
 DCV="{http://thermal.cnde.iastate.edu/dcvalue}"
@@ -725,6 +735,16 @@ class href_fragment(object):
         return self.unquoted_string
 
 
+    def get_human(self)
+        if self.unquoted_string is None:
+            self.assemble()
+            pass
+        # For the moment, just return the regular result
+        # This should be modified to eliminate namespace prefixes!!!
+        
+        # return non-url-quoted string
+        return self.unquoted_string
+    
     def get_canonical(self):
         self.analyze()
 
@@ -738,6 +758,7 @@ class href_fragment(object):
         pass
 
     def evaluate(self,xmldocu,refelement,noprovenance=False):
+        # refelement only used for relative xpointers within same document
         self.analyze()
 
         if self.type==self.TYPE_ID:
@@ -799,6 +820,15 @@ class href_context(object):
 
     # Note that this is 'final' and should not be changed once
     # created
+
+    # note that in general you do not get provenance tracking with
+    # href_context objects, but you do after they are wrapped
+    # as dc_value.hrefvalue
+
+
+    # ***BUG*** Will not correctly read in an xpointer reference that
+    # is a relative xpath within the same file. This is because we
+    # don't currently store the xpath context in fromxml() 
     
     contextlist=None  # list (actually tuple, once finalized) of URL's (QUOTED)
 
@@ -846,6 +876,9 @@ class href_context(object):
                 if len(URL.contextlist) > 0:
                     gotURL=True
                     pass
+                if fragment is None:
+                    fragment=URL.fragment
+                    pass
                 pass
             pass
         elif isinstance(URL,tuple):
@@ -880,11 +913,24 @@ class href_context(object):
             thiscontext=contextlist[pos]
             parsed=urlsplit(thiscontext)
 
-            if parsed.fragment != "":
-                if pos==len(contextlist)-1: # only latest entry generally has meaning
+            if pos==len(contextlist)-1: # only latest entry generally has meaningful fragment
+                if parsed.fragment != "":
                     # rebuild context without fragment
-                    (thiscontext,fragment)=urldefrag(thiscontext)
-                    self.fragment=href_fragment(unquote(fragment))
+                    if fragment is not None:
+                        # Use fragment explicitly passed from above
+                        (thiscontext,fragmentjunk)=urldefrag(thiscontext)
+                        pass
+                    else:
+                        # Extract fragment
+                        (thiscontext,fragment)=urldefrag(thiscontext)
+                        pass
+
+                    if isinstance(fragment,basestring):
+                        self.fragment=href_fragment(unquote(fragment))
+                        pass
+                    else:  # parsed fragment
+                        self.fragment=fragment
+                        pass
                     
                     pass
                 pass
@@ -1225,6 +1271,13 @@ class href_context(object):
             return ""
         return quote("#"+self.fragment.get_fragment())
 
+
+    def fragless(self):
+        if self.fragment is None:
+            return self
+        return href_context(self.contextlist)
+    
+    
     def leafless(self):
         # hrefvalues can include path and file. When defining a context, you
         # often want to remove the file part. This routine copies a href and
@@ -1343,6 +1396,19 @@ class href_context(object):
         href=href_context(filehref,fragment=href_fragment.from_constrained_etxpath(etxpath,element.nsmap))
 
         return href
+
+    @classmethod
+    def fromlxmldocelement(cls,filehrefc,doc,element,tag_index_paths_override=None):
+        # Get a HREF pointing at the specified element of xmldocu,
+        # using XPointer to probe into the document
+        # xmldocu must be at least read-only locked
+        
+        etxpath=getelementetxpath(doc,element,tag_index_paths_override=tag_index_paths_override)
+
+        href=href_context(filehrefc,fragment=href_fragment.from_constrained_etxpath(etxpath,element.nsmap))
+
+        return href
+
     
     
     pass
