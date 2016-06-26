@@ -1392,7 +1392,7 @@ class href_context(object):
         return path
 
     def has_fragment(self):
-        return self.fragment is None
+        return self.fragment is not None
     
     def getunquotedfragment(self):
         if self.fragment is None:
@@ -1403,6 +1403,11 @@ class href_context(object):
         if self.fragment is None:
             return ""
         return "#"+quote(self.fragment.get_fragment(),safe="()/")
+
+    def gethumanfragment(self):
+        if self.fragment is None:
+            return ""
+        return "#"+self.fragment.get_human()
 
 
     def fragless(self):
@@ -1556,6 +1561,12 @@ class href_context(object):
 
         return href
 
-    
+    def evaluate_fragment(self,xmldocu,refelement=None,noprovenance=False):
+        if self.fragment is None:
+            if refelement is not None:
+                return refelement
+            return xmldocu.getroot()
+
+        return self.fragment.evaluate(xmldocu,refelement=refelement,noprovenance=noprovenance)
     
     pass
