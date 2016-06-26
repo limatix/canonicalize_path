@@ -58,6 +58,8 @@ import os
 import collections
 import re
 import posixpath
+import copy
+
 
 from . import canonicalize_xpath_module
 from .canonicalize_xpath_module import etxpath_isabs
@@ -171,6 +173,15 @@ def etxpath2xpointer(context_etxpath,etxpath,desired_nsmap=None,no_nsmap=False,n
     # Gives canonical xpointer form if
     #   1. etxpath is absolute and canonicalized
     #   2. desired_nsmap is NOT given
+
+    if desired_nsmap is None:
+        desired_nsmap={}
+        pass
+
+    if None in desired_nsmap:
+        desired_nsmap=copy.copy(desired_nsmap)
+        del desired_nsmap[None]
+        pass
     
     if not(etxpath_isabs(etxpath)):
         # relative path -- must join with context
@@ -181,9 +192,6 @@ def etxpath2xpointer(context_etxpath,etxpath,desired_nsmap=None,no_nsmap=False,n
             pass
         pass
 
-    if desired_nsmap is None:
-        desired_nsmap={}
-        pass
     
     desired_revnsmap=dict((v, k) for k, v in desired_nsmap.iteritems())
     
@@ -348,7 +356,7 @@ def etxpath2xlink(context_etxpath,etxpath,desired_nsmap=None):
 
 
 
-parse_schemename=re.compile(r"""\s*\([^()^]+\)\s*""")
+parse_schemename=re.compile(r"""\s*([^()^]+)\s*""")
 
 def parse_xpointer_schemename(frag):
 
@@ -382,7 +390,7 @@ def parse_xpointer_schemeparams(frag):
             if cnt < 0:
                 raise ValueError
             if cnt==0:
-                return (cnt,params)
+                return (pos+1,params)
             pass
         elif ch=='^': # '^' is the escape character
             pos+=1
@@ -400,14 +408,20 @@ def parse_fragment_xpointer(frag):
     # returns # of characters, followed by list of (schemename, schemeparams) tuples
     
     frag_info=[]
+    # print("parse_fragment_xpointer: %s" % (frag))
     (numchars,schemename)=parse_xpointer_schemename(frag)
+    # print("parse_fragment_xpointer: numchars=%d schemename=%s remainingfrag=%s" % (numchars,schemename,frag[numchars:]))
     (numchars2,schemeparams)=parse_xpointer_schemeparams(frag[numchars:])
+    # print("parse_fragment_xpointer: numchars2=%d schemeparams=%s remainingfrag=%s" % (numchars2,schemeparams,frag[(numchars+numchars2):]))
+    
     frag_info.append((schemename,schemeparams))
+
+    numchars3=0
     
     if numchars+numchars2 < len(frag):
         (numchars3,nextfrags)=parse_fragment_xpointer(frag[(numchars+numchars2):])
+        frag_info.extend(nextfrags)
         pass
-    frag_info.extend(nextfrags)
     return (numchars+numchars2+numchars3,frag_info)
 
 
@@ -510,6 +524,10 @@ def constrained_xpath_split_to_etxpath(xpath,nsmap):
             pass
         
         newtag=matchobj.group(3)
+        # if newtag is None:
+        #     newtag=""
+        #     pass
+        
 
         primconstraint=matchobj.group(4)
         newprim=""
@@ -536,8 +554,11 @@ def constrained_xpath_split_to_etxpath(xpath,nsmap):
             newprim+="]" # attach trailing close bracket
             pass
 
-        secconstraint=matchobj.group(5)
-
+        secconstraint=""
+        if matchobj.group(5) is not None:
+            secconstraint=matchobj.group(5)
+            pass
+        
         components.append(optionalatsign+newnspfx+newtag+newprim+secconstraint)
 
         
@@ -687,7 +708,7 @@ class href_fragment(object):
                     nsmap_overrides[nspre]=nsval
                     pass
                 else:
-                    self.schemes_and_params.append(nsmap_overrides,schemename,schemeparams)
+                    self.schemes_and_params.append((nsmap_overrides,schemename,schemeparams,))
                     pass
                 pass
             
@@ -881,7 +902,7 @@ class href_context(object):
 
 
     # ***BUG*** Will not correctly read in an xpointer reference that
-    # is a relative xpath within the same file. This is because we
+    # is a relative xpath (no leading slash) within the same file. This is because we
     # don't currently store the xpath context in fromxml() 
     
     contextlist=None  # list (actually tuple, once finalized) of URL's (QUOTED)
@@ -897,6 +918,7 @@ class href_context(object):
     absurl_cache=None
     canonicalize_cache=None
     hash_cache=None
+    path_cache=None
     
     def __init__(self,URL,contexthref=None,fragment=None):
         contextlist=[]
@@ -914,6 +936,7 @@ class href_context(object):
         if contexthref is not None and not hasattr(contexthref,"contextlist"):
 
             # if a tuple, interpret as a contextlist  otherwise contexthref presumed to be a string...
+            # print(contexthref.__class__.__name__)
             assert(isinstance(contexthref,basestring) or isinstance(contexthref,tuple))
             contexthref=href_context(contexthref)
             pass
@@ -1106,6 +1129,17 @@ class href_context(object):
             new_context=href_context(new_context)
             pass
 
+        #import pdb
+        #pdb.set_trace()
+        
+        # print("attempt_relative_url: %s in context of %s" % (self.humanurl(),new_context.humanurl()))
+        #if self.fragless()==new_context.fragless():
+        #    import pdb
+        #    pdb.set_trace()
+        #    pass
+        
+
+        
         # search for common ancestors of our context.
         # if we have common ancestors, we can define a
         # relative URL
@@ -1180,10 +1214,10 @@ class href_context(object):
         #  and  our_url='../fubar/../foo/bar.html'
         # result is ../../foo/bar.html
         #  
-        # note that the file part of context URLs is to be ignored
+        # note that the file part of context URLs is (no longer) to be ignored
         # We use the posixpath module to manipulate these paths
         # (see http://stackoverflow.com/questions/7894384/python-get-url-path-sections)
-        new_context_path=posixpath.split(new_context_URL)[0]
+        (new_context_path,new_context_file)=posixpath.split(new_context_URL)
 
         
         # new context path now refers to a directory without trailing '/'
@@ -1259,6 +1293,21 @@ class href_context(object):
                 pass
             
             pass
+
+        # transform link to '.' or '.#fragment' to just plain '' or '#fragment'
+        if normalized_result_path==".":
+            # '.' can mean either current file or current directory
+            #
+            # if new_context_file, from above, is not blank, then
+            # the context_file is __different__ and we mean current
+            # directory, i.e.  '.'
+            # if it is blank, then everything is identical and we
+            # mean current file, i.e. ''
+            if new_context_file=="":
+                normalized_result_path=""
+                pass
+            
+            pass
         
         return urljoin(normalized_result_path,our_fragment)
     
@@ -1301,8 +1350,10 @@ class href_context(object):
 
         contexthref=xmldocu.getcontexthref()
 
+        
+
         if (not force_abs_href) and (contexthref is not None) and (not contexthref.isblank()) and (not self.isblank()):
-            url=self.attempt_relative_url(xmldocu.getcontexthref())
+            url=self.attempt_relative_url(xmldocu.getcontexthref().value())
             pass
         else:
             url=self.absurl()  # Create our best-of-ability absolute url
@@ -1325,6 +1376,9 @@ class href_context(object):
 
     
     def getpath(self):
+        if self.path_cache is not None:
+            return self.path_cache
+        
         assert(self.isfile())
         
         parsed=urlsplit(self.absurl())
@@ -1334,6 +1388,7 @@ class href_context(object):
         
         
         path=url2pathname(parsed.path)
+        self.path_cache=path
         return path
 
     def has_fragment(self):
@@ -1372,7 +1427,14 @@ class href_context(object):
 
         if len(leaflesspath) > 0:
             leaflessurl=urlunsplit((parsed[0],parsed[1],leaflesspath,parsed[3],parsed[4]))
+            # shortcut to return self if we haven't changed anything
+            if leaflessurl==self.contextlist[-1]:
+                return self
             pass
+        
+        pass
+        
+        
 
         # Start with all but last element of href context
         newcontextlist=[]
@@ -1389,7 +1451,7 @@ class href_context(object):
         # NOTE: to use xml_attribute you must provide xmldocu)
         
         if xmldocu is not None:
-            xmlcontexthref=xmldocu.getcontexthref()
+            xmlcontexthref=xmldocu.getcontexthref().value()
             pass
         else:
             xmlcontexthref=None
