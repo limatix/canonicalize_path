@@ -967,13 +967,39 @@ class href_context(object):
         else:
             # URL presumed to be a string
             assert(isinstance(URL,basestring))
-            if URL != "":
+            parsedURL=urlsplit(URL)
+            if parsedURL.path != "":
+                if len(contextlist) > 0:
+                    # strip off leaf of latest context
+                    # before appending this UNLESS URL is just a fragment
+                    # ... like .leafless() method
+                    latest=contextlist.pop()
+                    parsedlatest=urlsplit(latest)
+                    leaflesslatestpath=posixpath.split(parsedlatest.path)[0]
+                    if len(leaflesslatestpath) > 0 and not leaflesslatestpath.endswith("/"):
+                        leaflesslatestpath+="/"
+                        pass
+
+                    leaflesslatesturl=urlunsplit((parsedlatest[0],parsedlatest[1],leaflesslatestpath,parsedlatest[3],parsedlatest[4]))
+
+                    if len(leaflesslatesturl) > 0:
+                        contextlist.append(leaflesslatesturl)
+                        pass
+                    pass
+                
                 contextlist.append(URL)
                 gotURL=True
                 pass
             else:
-                self.contextlist=None
-                return
+                if len(contextlist) == 0 and URL =="":
+                    # blank
+                    self.contextlist=None
+                    return
+                if len(URL) > 0:
+                    contextlist.append(URL)
+                    pass
+                gotURL=True
+                pass
             pass
 
         if not gotURL:
@@ -1430,21 +1456,17 @@ class href_context(object):
             leaflesspath+="/"
             pass
 
-        if len(leaflesspath) > 0:
-            leaflessurl=urlunsplit((parsed[0],parsed[1],leaflesspath,parsed[3],parsed[4]))
-            # shortcut to return self if we haven't changed anything
-            if leaflessurl==self.contextlist[-1]:
-                return self
-            pass
-        
-        pass
+        leaflessurl=urlunsplit((parsed[0],parsed[1],leaflesspath,parsed[3],parsed[4]))
+        # shortcut to return self if we haven't changed anything
+        if leaflessurl==self.contextlist[-1]:
+            return self
         
         
 
         # Start with all but last element of href context
         newcontextlist=[]
         newcontextlist.extend(self.contextlist[:-1])
-        if len(leaflesspath) > 0:
+        if len(leaflessurl) > 0:
             newcontextlist.append(leaflessurl)
             pass
         
@@ -1454,6 +1476,9 @@ class href_context(object):
     @classmethod
     def fromxml(cls,xmldocu,element):
         # NOTE: to use xml_attribute you must provide xmldocu)
+
+        # import pdb
+        # pdb.set_trace()
         
         if xmldocu is not None:
             xmlcontexthref=xmldocu.getcontexthref().value()

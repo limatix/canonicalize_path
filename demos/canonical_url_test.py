@@ -23,6 +23,14 @@ assert(href_context(('/tmp/','foo/','beer.html#frag1')).attempt_relative_url(hre
 assert(href_context(('/tmp/','foo/','fubar/','beer.html')).attempt_relative_url(href_context(('/tmp/','foo/','bar.html#fragment2')))=='fubar/beer.html')
 
 
+assert(href_context(('foo.html',)).attempt_relative_url(href_context(('foo.css',)))=='foo.html')
+
+#foo=href_context(('foo.html',))
+#bar=href_context(('foo.css',))
+#import pdb
+#pdb.set_trace()
+#assert(foo.attempt_relative_url(bar)=='foo.html')
+
 
 etxpath="/{http://foo/bar}a/c/{http://bar/foo}b/{http://foo/bar}d/@{http://foo/foo}c"
 
