@@ -19,7 +19,7 @@
 # canonical if you re-canonicalize them yourself
 
 # Format:
-#  /databrowse/path/to/file.xml#xpath({cn0=http://thermal.cnde.iastate.edu/datacollect,cn1=http://limatix.org/checklist}cn0:summary[@cn1:foo='bar']/cn1:clinfo)
+#  /databrowse/path/to/file.xml#xpath({cn0=http://limatix.org/datacollect,cn1=http://limatix.org/checklist}cn0:summary[@cn1:foo='bar']/cn1:clinfo)
 
 # References: XPointer XMLNS scheme, https://www.w3.org/TR/2002/PR-xptr-xmlns-20021113/
 # XPOINTER framework
