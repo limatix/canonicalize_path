@@ -67,8 +67,8 @@ except (IOError,TypeError):
 #else:
 config_dir=os.path.join(__install_prefix__,"etc","canonicalize_path")
 
-DBDIR="{http://thermal.cnde.iastate.edu/databrowse/dir}dir"
-DBFILE="{http://thermal.cnde.iastate.edu/databrowse/dir}file"
+DBDIR="{http://limatix.org/databrowse/dir}dir"
+DBFILE="{http://limatix.org/databrowse/dir}file"
 
 
 # Canonical ETxpaths are only properly canonical so long as tag_index_paths
@@ -77,9 +77,9 @@ DBFILE="{http://thermal.cnde.iastate.edu/databrowse/dir}file"
 
 # Example tag_index_paths.conf:
 # {
-#   "{http://thermal.cnde.iastate.edu/databrowse/dir}dir":  "@name",
-#   "{http://thermal.cnde.iastate.edu/databrowse/dir}file": "@basename",
-#   "{http://thermal.cnde.iastate.edu/datacollect}measurement": "measnum",
+#   "{http://limatix.org/databrowse/dir}dir":  "@name",
+#   "{http://limatix.org/databrowse/dir}file": "@basename",
+#   "{http://limatix.org/datacollect}measurement": "measnum",
 #
 # }
 
@@ -538,7 +538,7 @@ def canonical_etxpath_break_out_file(fullxpath):
         
         assert(optionalatsign=="")
         
-        if (clarkpfx=="{http://thermal.cnde.iastate.edu/databrowse/dir}" and
+        if (clarkpfx=="{http://limatix.org/databrowse/dir}" and
             (tag=="dir" or tag=="file") and (secconstraint is None or secconstraint=="[1]")):
             if tag=="dir":
                 constraintmatch=constraint_match_obj.match(primconstraint)

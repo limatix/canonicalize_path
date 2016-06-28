@@ -89,7 +89,7 @@ class install_lib_save_prefix(install_lib):
 setup(name="canonicalize_path",
       description="path canonicalization",
       author="Stephen D. Holland",
-      # url="http://thermal.cnde.iastate.edu/dataguzzler",
+      # url="http://limatix.org/dataguzzler",
       packages=["canonicalize_path"],
       cmdclass={"install_lib": install_lib_save_prefix},
       data_files=[ (os.path.join('etc','canonicalize_path'),config_files) ],

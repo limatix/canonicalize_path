@@ -19,7 +19,7 @@
 # canonical if you re-canonicalize them yourself
 
 # Format:
-#  /databrowse/path/to/file.xml#xpath({cn0=http://thermal.cnde.iastate.edu/datacollect,cn1=http://thermal.cnde.iastate.edu/checklist}cn0:summary[@cn1:foo='bar']/cn1:clinfo)
+#  /databrowse/path/to/file.xml#xpath({cn0=http://thermal.cnde.iastate.edu/datacollect,cn1=http://limatix.org/checklist}cn0:summary[@cn1:foo='bar']/cn1:clinfo)
 
 # References: XPointer XMLNS scheme, https://www.w3.org/TR/2002/PR-xptr-xmlns-20021113/
 # XPOINTER framework
@@ -107,7 +107,7 @@ if not hasattr(builtins,"basestring"):
     pass
 
 
-DCV="{http://thermal.cnde.iastate.edu/dcvalue}"
+DCV="{http://limatix.org/dcvalue}"
 
 
 if hasattr(str,'maketrans'):
@@ -1347,7 +1347,7 @@ class href_context(object):
     def xmlrepr(self,xmldocu,element,force_abs_href=False):
 
         #import pdb as pythondb
-        #if element.tag=="{http://thermal.cnde.iastate.edu/datacollect}dgsfile":
+        #if element.tag=="{http://limatix.org/datacollect}dgsfile":
         #    pythondb.set_trace()
 
         #if xml_attribute is None:

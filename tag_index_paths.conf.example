@@ -12,10 +12,10 @@
     # the first text node may be all that is used)
     # If a list or tuple is provided then the entries will be tried in order
     # until one doesn't come up empty.
-    "{http://thermal.cnde.iastate.edu/databrowse/dir}dir":  "@name",
-    "{http://thermal.cnde.iastate.edu/databrowse/dir}file": "@basename",
-    "{http://thermal.cnde.iastate.edu/datacollect}measurement": "{http://thermal.cnde.iastate.edu/datacollect}measnum",
-    "{http://thermal.cnde.iastate.edu/checklist}checklist": ("@title","."),
-    "{http://thermal.cnde.iastate.edu/datacollect/provenance}process": "@uuid",
+    "{http://limatix.org/databrowse/dir}dir":  "@name",
+    "{http://limatix.org/databrowse/dir}file": "@basename",
+    "{http://thermal.cnde.iastate.edu/datacollect}measurement": "{http://limatix.org/datacollect}measnum",
+    "{http://limatix.org/checklist}checklist": ("@title","."),
+    "{http://limatix.org/provenance}process": "@uuid",
 
 }
