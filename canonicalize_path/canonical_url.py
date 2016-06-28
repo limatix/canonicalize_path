@@ -928,7 +928,7 @@ class href_context(object):
         #import pdb as pythondb
         #pythondb.set_trace()
 
-        if URL is None and contexthref is None:
+        if URL is None or (URL is None and contexthref is None):
             self.contextlist=None
             # blank
             return
@@ -1494,8 +1494,12 @@ class href_context(object):
 
         #assert(not is_file_in_dest) # This derived class uses its internal context specification, not the is_file_in_dest parameter
 
-        text=xmldocu.getattr(element,xml_attribute,"")
-
+        if xmldocu.hasattr(element,xml_attribute):
+            text=xmldocu.getattr(element,xml_attribute)
+            pass
+        else:
+            text=None
+            pass
         val=href_context(text,contexthref=xmlcontexthref)
 
         return val
