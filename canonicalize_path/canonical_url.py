@@ -1400,6 +1400,18 @@ class href_context(object):
         quoted_filename=self.get_bare_quoted_filename()
         return unquote(quoted_filename)
 
+    def is_directory(self):
+        # returns if url ends in a slash
+        if self.contextlist is None:
+            return False
+
+        if len(self.contextlist) < 1:
+            return True
+        
+        parsed=urlsplit(self.contextlist[-1])
+        return parsed.path.endswith("/")
+    
+    
     
     def getpath(self):
         if self.path_cache is not None:
