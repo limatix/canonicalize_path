@@ -1385,6 +1385,7 @@ class href_context(object):
             url=self.absurl()  # Create our best-of-ability absolute url
             pass
         xmldocu.setattr(element,xml_attribute,url)
+        xmldocu.setattr(element,"xlink:type","simple")  # required by xlink spec
         xmldocu.modified=True
 
         pass
