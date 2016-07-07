@@ -446,8 +446,8 @@ def parse_xpointer_xmlns(frag):
 # "[^"]*"         Double Quoted string
 # '[^']*'         Single quoted string
 # (?:[^\s!"'#$%&()*+,:;<=>?@^`~]+:)  namespace prefix
-# (?:(?:[^[\]"':]+?)|(?:"[^"]*")|(?:'[^']*')|(?:[^\s!"'#$%&()*+,:;<=>?@^`~]+:))+  Constraint content w/quotes
-constrained_xpath_component_match_obj=re.compile(r"""/(@?)([^\s!"'#$%&()*+,:;<=>?@^`~]+:)?([^[\]/]+)(?:([[](?:(?:[^[\]"':]+?)|(?:"[^"]*")|(?:'[^']*')|(?:[^\s!"'#$%&()*+,:;<=>?@^`~]+:))+[]])([[]\d+[]])?)?"""  )
+# (?:(?:[^[\]"':]+?)|(?:"[^"]*")|(?:'[^']*')|(?:[^]\s!"'#$%&()*+,:;<=>?@^`~]+:))+  Constraint content w/quotes
+constrained_xpath_component_match_obj=re.compile(r"""/(@?)([^\s!"'#$%&()*+,:;<=>?@^`~]+:)?([^[\]/]+)(?:([[](?:(?:[^[\]"':]+?)|(?:"[^"]*")|(?:'[^']*')|(?:[^]\s!"'#$%&()*+,:;<=>?@^`~]+:))+[]])([[]\d+[]])?)?"""  )
 
 def constrained_xpath_split(xpath):
     """Split xpath into individual xpath components
@@ -485,9 +485,9 @@ def constrained_xpath_split(xpath):
 #[^[\]"':]+? : Constraint content non-greedy
 # "[^"]*"         Double Quoted string
 # '[^']*'         Single quoted string
-# [^\s!"'#$%&()*+,:;<=>?@^`~]+:  namespace prefix
+# [^]\s!"'#$%&()*+,:;<=>?@^`~]+:  namespace prefix
 
-constrainedxpath_primconstraint_match_re=re.compile(r"""([^[\]"':]+?)|("[^"]*")|('[^']*')|([^\s!"'#$%&()*+,:;<=>?@^`~]+:)""")
+constrainedxpath_primconstraint_match_re=re.compile(r"""([^]\s!"'#$%&()*+,:;<=>?@^`~]+:)|("[^"]*")|('[^']*')|([^[\]"':]+?)""")
 
 def constrained_xpath_split_to_etxpath(xpath,nsmap):
     """Split xpath into individual xpath components
@@ -537,9 +537,9 @@ def constrained_xpath_split_to_etxpath(xpath,nsmap):
             newprim+="["
             # Iterate over elements of primconstraint
             for primconstraint_el_obj in constrainedxpath_primconstraint_match_re.finditer(primconstraint[1:-1]):
-                # group(1) is arbitrary characters, group(2) is double-quoted strings, group(3) is single-quoted strings, group(4) is namespace prefix+":"
-                if primconstraint_el_obj.group(4) is not None:
-                    const_nspfx=primconstraint_el_obj.group(4)
+                # group(4) is arbitrary characters, group(2) is double-quoted strings, group(3) is single-quoted strings, group(1) is namespace prefix+":"
+                if primconstraint_el_obj.group(1) is not None:
+                    const_nspfx=primconstraint_el_obj.group(1)
                     if const_nspfx[:-1] in nsmap:
                         newprim+="{"+nsmap[const_nspfx[:-1]]+"}"
                         pass
