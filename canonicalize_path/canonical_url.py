@@ -193,7 +193,7 @@ def etxpath2xpointer(context_etxpath,etxpath,desired_nsmap=None,no_nsmap=False,n
         pass
 
     
-    desired_revnsmap=dict((v, k) for k, v in desired_nsmap.iteritems())
+    desired_revnsmap=dict((v, k) for k, v in desired_nsmap.items())
     
     # now need to break down etxpath and transform it into a 
     # simple xpath + a namespace mapping
