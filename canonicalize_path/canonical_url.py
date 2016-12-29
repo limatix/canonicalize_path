@@ -1249,7 +1249,7 @@ class href_context(object):
         # new context path now refers to a directory without trailing '/'
         # now do path normalization
         normalized_context_path=posixpath.normpath(new_context_path)  # directory without trailing slash
-        if normalized_context_path.startswith("../"):
+        if normalized_context_path.startswith("../") or normalized_context_path=="..":
             # leading '..' on context is directory we don't and can't know the name
             # of...
 
