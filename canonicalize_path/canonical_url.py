@@ -1537,6 +1537,9 @@ class href_context(object):
 
         return self.absurl()==other.absurl()
 
+    def __ne__(self,other):
+        return not(self.__eq__(other))
+    
 
     def canonicalize(self):
         # return canonicalized form
