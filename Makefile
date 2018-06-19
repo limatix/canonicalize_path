@@ -14,8 +14,8 @@ clean:
 	rm -rf canonicalize_path/__pycache__
 
 commit: clean
-	hg addrem
-	hg commit
+	git add -A # hg addrem
+	git commit -a # hg commit
 
 
 
