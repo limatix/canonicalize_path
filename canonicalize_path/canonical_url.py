@@ -439,15 +439,15 @@ def parse_xpointer_xmlns(frag):
 # Only accepts reduced xpath from our canonical xpath generator
 # /              Slash starting 
 # (@?)           Optional at-sign
-#([^\s!"'#$%&()*+,:;<=>?@^`~]+:)? optional namespace prefix
+#([^\s!"'#/$%&()*+,:;<=>?@^`~]+:)? optional namespace prefix
 # ([^[\]/]+)      Tag name
 # (?:([[] ... []])([[]\d+[]])?)?   Optional Constraint plus Optional Integer Constraint
 # [^[\]"':]+?      Constraint content no quotes (non-greedy)
 # "[^"]*"         Double Quoted string
 # '[^']*'         Single quoted string
-# (?:[^\s!"'#$%&()*+,:;<=>?@^`~]+:)  namespace prefix
-# (?:(?:[^[\]"':]+?)|(?:"[^"]*")|(?:'[^']*')|(?:[^]\s!"'#$%&()*+,:;<=>?@^`~]+:))+  Constraint content w/quotes
-constrained_xpath_component_match_obj=re.compile(r"""/(@?)([^\s!"'#$%&()*+,:;<=>?@^`~]+:)?([^[\]/]+)(?:([[](?:(?:[^[\]"':]+?)|(?:"[^"]*")|(?:'[^']*')|(?:[^]\s!"'#$%&()*+,:;<=>?@^`~]+:))+[]])([[]\d+[]])?)?"""  )
+# (?:[^\s!"'#/$%&()*+,:;<=>?@^`~]+:)  namespace prefix
+# (?:(?:[^[\]"':]+?)|(?:"[^"]*")|(?:'[^']*')|(?:[^]\s!"'#/$%&()*+,:;<=>?@^`~]+:))+  Constraint content w/quotes
+constrained_xpath_component_match_obj=re.compile(r"""/(@?)([^\s!"'#/$%&()*+,:;<=>?@^`~]+:)?([^[\]/]+)(?:([[](?:(?:[^[\]"':]+?)|(?:"[^"]*")|(?:'[^']*')|(?:[^]\s!"'#/$%&()*+,:;<=>?@^`~]+:))+[]])([[]\d+[]])?)?"""  )
 
 def constrained_xpath_split(xpath):
     """Split xpath into individual xpath components
