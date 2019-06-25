@@ -1487,15 +1487,12 @@ class href_context(object):
 
 
     @classmethod
-    def fromxml(cls,xmldocu,element,noprovenance=False):
+    def fromxml(cls,xmldocu,element):
         # NOTE: to use xml_attribute you must provide xmldocu)
 
         # import pdb
         # pdb.set_trace()
 
-        if xmldocu is not None and not noprovenance:
-            provenance.xmldocelementaccessed(xmldocu,element)
-            pass
 
         if xmldocu is not None:
             xmlcontexthref=xmldocu.getcontexthref().value()
@@ -1512,7 +1509,7 @@ class href_context(object):
         #assert(not is_file_in_dest) # This derived class uses its internal context specification, not the is_file_in_dest parameter
 
         if xmldocu.hasattr(element,xml_attribute):
-            text=xmldocu.getattr(element,xml_attribute,noprovenance=noprovenance)
+            text=xmldocu.getattr(element,xml_attribute,noprovenance=True)
             pass
         else:
             text=None
