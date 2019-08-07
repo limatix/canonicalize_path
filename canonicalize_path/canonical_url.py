@@ -1329,7 +1329,7 @@ class href_context(object):
             # directory, i.e.  '.'
             # if it is blank, then everything is identical and we
             # mean current file, i.e. ''
-            if new_context_file=="":
+            if new_context_file=="" and new_context_URL != '':
                 normalized_result_path=""
                 pass
             
@@ -1482,7 +1482,9 @@ class href_context(object):
         if len(leaflessurl) > 0:
             newcontextlist.append(leaflessurl)
             pass
-        
+        elif len(newcontextlist)==0:
+            newcontextlist.append(".")
+            pass
         return href_context(tuple(newcontextlist))
 
 
