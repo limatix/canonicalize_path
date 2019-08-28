@@ -1171,7 +1171,8 @@ class href_context(object):
         # relative URL
         common_context=0
         for cnt in range(min(len(new_context.contextlist),len(self.contextlist))):
-            if new_context.contextlist[cnt]==self.contextlist[cnt]:
+            if (new_context.contextlist[cnt]==self.contextlist[cnt]): #or
+                #(self.contextlist[cnt].endswith('/') and not new_context.contextlist[cnt].endswith('/') and new_context.contextlist[cnt]==self.contextlist[cnt][:-1])):
                 common_context+=1
                 pass
             else:
@@ -1194,6 +1195,14 @@ class href_context(object):
         for pos in range(len(self.contextlist)-1,common_context-1,-1):
             our_URL=urljoin(self.contextlist[pos],our_URL)
             pass
+
+        # Remove any parallel leading '..''...
+        
+        while new_context_URL.startswith("../") and our_URL.startswith("../"):
+            new_context_URL=new_context_URL[3:]
+            our_URL=our_URL[3:]
+            pass
+
 
         new_context_parsed=urlsplit(new_context_URL)
         our_parsed=urlsplit(urljoin(our_URL,our_fragment))
@@ -1243,13 +1252,14 @@ class href_context(object):
         # note that the file part of context URLs is (no longer) to be ignored
         # We use the posixpath module to manipulate these paths
         # (see http://stackoverflow.com/questions/7894384/python-get-url-path-sections)
+
         (new_context_path,new_context_file)=posixpath.split(new_context_URL)
 
         
         # new context path now refers to a directory without trailing '/'
         # now do path normalization
         normalized_context_path=posixpath.normpath(new_context_path)  # directory without trailing slash
-        if normalized_context_path.startswith("../") or normalized_context_path=="..":
+        if (normalized_context_path.startswith("../") or normalized_context_path==".."):
             # leading '..' on context is directory we don't and can't know the name
             # of...
 
