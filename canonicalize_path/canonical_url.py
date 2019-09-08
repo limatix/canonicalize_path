@@ -1259,6 +1259,11 @@ class href_context(object):
         # new context path now refers to a directory without trailing '/'
         # now do path normalization
         normalized_context_path=posixpath.normpath(new_context_path)  # directory without trailing slash
+        if new_context_path=="" and normalized_context_path==".":
+            # normpath converts "" into ".".... eliminate this
+            normalized_context_path=""
+            pass
+        
         if (normalized_context_path.startswith("../") or normalized_context_path==".."):
             # leading '..' on context is directory we don't and can't know the name
             # of...
@@ -1304,6 +1309,12 @@ class href_context(object):
 
         # Eliminate unnecessary '..'s' in resultpath
         normalized_result_path=posixpath.normpath(resultpath)
+
+        if resultpath=="" and normalized_result_path==".":
+            # normpath converts "" into ".".... eliminate this
+            normalized_result_path=""
+            pass
+
         # posixpath.normpath removes trailing slash, but we want to keep that...
         if our_URL.endswith("/") and not(normalized_result_path.endswith("/")):
             normalized_result_path += "/"
