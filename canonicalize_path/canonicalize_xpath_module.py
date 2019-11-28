@@ -235,13 +235,13 @@ def getelementetxpath(doc,element,root=None,tag_index_paths_override=None):
 # (@?) optional this-is-an-attribute
 # ({[^}]+})?     Optional Clark notation
 # ([^[\]{}@/]+)      Tag name
-# (?:([[] ... []])([[]\d+[]])?)?   Optional Constraint plus Optional Integer Constraint
+# (?:([\[] ... []])([\[]\d+[]])?)?   Optional Constraint plus Optional Integer Constraint
 # [^[\]"'{}]+     Constraint content no quotes or braces
 # "[^"]*"         Double Quoted string
 # '[^']*'         Single quoted string
 # [{][^{}]*[}]    Clark notation string
 # (?:(?:[^[\]"'{}]+)|(?:"[^"]*")|(?:'[^']*')|(?:[{][^{}]*[}]))+  Constraint content w/quotes and/or Clark notation
-xpath_clarkcvt_match_re=r"""(@?)({[^}]+})?([^[\]{}@/]+)(?:([[](?:(?:[^[\]"'{}]+)|(?:"[^"]*")|(?:'[^']*')|(?:[{][^{}]*[}]))+[]])([[]\d+[]])?)?"""
+xpath_clarkcvt_match_re=r"""(@?)({[^}]+})?([^[\]{}@/]+)(?:([\[](?:(?:[^[\]"'{}]+)|(?:"[^"]*")|(?:'[^']*')|(?:[{][^{}]*[}]))+[]])([\[]\d+[]])?)?"""
 xpath_clarkcvt_match_obj=re.compile(xpath_clarkcvt_match_re)
 
 # xpath_primconstraint_match_re matches one element of the primary constraint, not including surrounding [] 
@@ -428,12 +428,12 @@ def create_canonical_etxpath(filepath,doc,element):
 # (@?)           Optional at-sign
 # ({[^}]+})?     Optional Clark notation
 # ([^[\]/]+)      Tag name
-# (?:([[] ... []])([[]\d+[]])?)?   Optional Constraint plus Optional Integer Constraint
+# (?:([\[] ... []])([\[]\d+[]])?)?   Optional Constraint plus Optional Integer Constraint
 # [^[\]"']+      Constraint content no quotes
 # "[^"]*"         Double Quoted string
 # '[^']*'         Single quoted string
 # (?:(?:[^[\]"']+)|(?:"[^"]*")|(?:'[^']*'))+  Constraint content w/quotes
-xpath_component_match_re=r"""(@?)({[^}]+})?([^[\]/]+)(?:([[](?:(?:[^[\]"']+)|(?:"[^"]*")|(?:'[^']*'))+[]])([[]\d+[]])?)?"""
+xpath_component_match_re=r"""(@?)({[^}]+})?([^[\]/]+)(?:([\[](?:(?:[^[\]"']+)|(?:"[^"]*")|(?:'[^']*'))+[]])([\[]\d+[]])?)?"""
 xpath_component_match_obj=re.compile(xpath_component_match_re)
 xpath_slashcomponent_match_obj=re.compile("/"+xpath_component_match_re)
 
@@ -459,7 +459,7 @@ def canonical_etxpath_split(fullxpath):
         pass
     
     for matchobj in xpath_slashcomponent_match_obj.finditer(fullxpath):
-        # for matchobj in re.finditer(r"""/({[^}]+})?([^[\]/]+)([[](?:(?:[^[\]/"']+)|(?:"[^"]*")|(?:'[^']*'))+[]])([[]\d+[]])?""",fullxpath):
+        # for matchobj in re.finditer(r"""/({[^}]+})?([^[\]/]+)([\[](?:(?:[^[\]/"']+)|(?:"[^"]*")|(?:'[^']*'))+[]])([\[]\d+[]])?""",fullxpath):
         if matchobj is None: 
             raise SyntaxError("XPath parsing \"%s\" after \"%s\"." % (fullxpath,text))
         # group(1) is optional at-sign; group(2) is Clark prefix, group(3) is tag, group(4) is primary constraint, group(5) is secondary constraint

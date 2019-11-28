@@ -441,13 +441,13 @@ def parse_xpointer_xmlns(frag):
 # (@?)           Optional at-sign
 #([^\s!"'#/$%&()*+,:;<=>?@^`~]+:)? optional namespace prefix
 # ([^[\]/]+)      Tag name
-# (?:([[] ... []])([[]\d+[]])?)?   Optional Constraint plus Optional Integer Constraint
+# (?:([\[] ... []])([\[]\d+[]])?)?   Optional Constraint plus Optional Integer Constraint
 # [^[\]"':]+?      Constraint content no quotes (non-greedy)
 # "[^"]*"         Double Quoted string
 # '[^']*'         Single quoted string
 # (?:[^\s!"'#/$%&()*+,:;<=>?@^`~]+:)  namespace prefix
 # (?:(?:[^[\]"':]+?)|(?:"[^"]*")|(?:'[^']*')|(?:[^]\s!"'#/$%&()*+,:;<=>?@^`~]+:))+  Constraint content w/quotes
-constrained_xpath_component_match_obj=re.compile(r"""/(@?)([^\s!"'#/$%&()*+,:;<=>?@^`~]+:)?([^[\]/]+)(?:([[](?:(?:[^[\]"':]+?)|(?:"[^"]*")|(?:'[^']*')|(?:[^]\s!"'#/$%&()*+,:;<=>?@^`~]+:))+[]])([[]\d+[]])?)?"""  )
+constrained_xpath_component_match_obj=re.compile(r"""/(@?)([^\s!"'#/$%&()*+,:;<=>?@^`~]+:)?([^[\]/]+)(?:([\[](?:(?:[^[\]"':]+?)|(?:"[^"]*")|(?:'[^']*')|(?:[^]\s!"'#/$%&()*+,:;<=>?@^`~]+:))+[]])([\[]\d+[]])?)?"""  )
 
 def constrained_xpath_split(xpath):
     """Split xpath into individual xpath components
