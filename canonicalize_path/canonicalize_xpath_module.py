@@ -221,14 +221,28 @@ def getelementetxpath(doc,element,root=None,tag_index_paths_override=None):
             indexstr=""
             pass
         #sys.stderr.write("element.tag=%s\nindexstr=%s\n" % (element.tag,indexstr))
-        ETXindex=etree.ETXPath("%s%s" % (element.tag,indexstr))  # if etree is None here you need to install python-lxml
-    
-        # Try this index on parent
-        siblings=ETXindex(parent)
-        elnum=[ i for i in range(len(siblings)) if siblings[i] is element ][0]+1
+        if "Comment" in type(element).__name__:
+            # This is a comment node
+            
+            ETXindex=etree.ETXPath("comment()")  # if etree is None here you need to install python-lxml
+            comment_siblings = ETXindex(parent)
 
-        pathel="%s%s[%d]" % (element.tag,indexstr,elnum)
-    
+            elnum=[ i for i in range(len(comment_siblings)) if comment_siblings[i] is element ][0]+1
+            
+            pathel="comment()[%d]" % (elnum)
+
+            pass
+        else:
+            
+            ETXindex=etree.ETXPath("%s%s" % (element.tag,indexstr))  # if etree is None here you need to install python-lxml
+            
+            # Try this index on parent
+            siblings=ETXindex(parent)
+            elnum=[ i for i in range(len(siblings)) if siblings[i] is element ][0]+1
+
+            pathel="%s%s[%d]" % (element.tag,indexstr,elnum)
+            pass
+
         return "%s/%s" % (pathprefix,pathel)
     pass
  
