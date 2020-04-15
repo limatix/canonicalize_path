@@ -208,7 +208,7 @@ def getelementetxpath(doc,element,root=None,tag_index_paths_override=None):
                         pass 
                     elif isinstance(indexval,collections_abc.Sequence) and len(indexval) > 1:
                         raise ValueError("Got multiple nodes searching for index element %s in " % (index))
-                    elif indexval is None:
+                    if indexval is None:
                         indexval=""
                         pass
                     pass
