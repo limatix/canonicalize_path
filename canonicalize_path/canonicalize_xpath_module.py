@@ -208,7 +208,10 @@ def getelementetxpath(doc,element,root=None,tag_index_paths_override=None):
                         pass 
                     elif isinstance(indexval,collections_abc.Sequence) and len(indexval) > 1:
                         raise ValueError("Got multiple nodes searching for index element %s in " % (index))
+                    elif indexval is None:
+                        indexval=""
                         pass
+                    pass
                 if len(indexval) > 0:  # if we found a suitable non-empty string
                     indexvalexpr=string_to_etxpath_expression(indexval)  
                     indexstr="[%s=%s]" % (index,indexvalexpr)
