@@ -123,6 +123,89 @@ if hasattr(str,'maketrans'):
     pass
 
 
+def my_urljoin(base, url):
+    """urljoin that like the Python 2.7 version will return a url
+    with a leading ".." """
+
+
+    (
+        base_scheme,
+        base_netloc,
+        base_path,
+        base_params,
+        base_query,
+        base_fragment
+    ) = urlparse(base, '')
+    
+    (
+        rel_scheme,
+        rel_netloc,
+        rel_path,
+        rel_params,
+        rel_query,
+        rel_fragment
+    )= urlparse(url, bscheme, allow_fragments)
+    
+    if base_scheme != rel_scheme:
+        return url
+    
+    if rel_netloc:
+        return url
+
+    scheme = base_scheme
+    netloc = base_netloc
+    path = rel_path
+    params = rel_params
+    query = rel_query
+    fragment = rel_fragment
+    
+    if rel_path[:1] == '/': # absolute path in rel. 
+        return urlunparse((rel_scheme, netloc, rel_path,
+                           rel_params, rel_query, rel_fragment))
+    if not rel_path and not rel_params:
+        # no path in rel
+        path = base_path
+        params = base_params
+        if not rel_query:
+            query = base_query
+            pass
+        return urlunparse((scheme, netloc, path,
+                           params, query, fragment))
+
+    # Attempt to join segments in path
+    segments = base_path.split('/')[:-1] + rel_path.split('/')
+
+
+    # Remove trailing '.' if present... leave as trailing '/'
+    if segments[-1] == '.':
+        segments[-1] = ''
+        pass
+
+    # Remove leading '.''s 
+    while '.' in segments:
+        segments.remove('.')
+        pass
+
+    # Collapse segments
+    
+    segnum = 1
+    while segnum < len(segments-1):
+        if segments[segnum]==".." and segments[segnum-1] != "..":
+            del segments[segnum-1]
+            del segments[segnum-1]
+            if segnum > 1:
+                segnum-=1
+                pass
+            pass
+        else:
+            segnum+=1
+            pass
+        pass
+    
+    return urlunparse((scheme, netloc, '/'.join(segments),
+                       params, query, fragment))
+
+
 def parensbalanced(unescaped):
     # Check if parentheses are balanced and therefore we don't need
     # to escape them
@@ -1107,7 +1190,7 @@ class href_context(object):
             pass
         
         for pos in range(len(self.contextlist)-1,-1,-1):
-            URL=urljoin(self.contextlist[pos],URL)
+            URL=my_urljoin(self.contextlist[pos],URL)
             pass
         
         # self.humanurl_cache=URL
@@ -1132,7 +1215,7 @@ class href_context(object):
             pass
         
         for pos in range(len(self.contextlist)-1,-1,-1):
-            URL=urljoin(self.contextlist[pos],URL)
+            URL=my_urljoin(self.contextlist[pos],URL)
             pass
         
         self.absurl_cache=URL
@@ -1181,7 +1264,7 @@ class href_context(object):
         # Join up remaining new_context
         new_context_URL=""
         for pos in range(len(new_context.contextlist)-1,common_context-1,-1):
-            new_context_URL=urljoin(new_context.contextlist[pos],new_context_URL)
+            new_context_URL=my_urljoin(new_context.contextlist[pos],new_context_URL)
             pass
 
         # join up remaining pieces of our url
@@ -1193,7 +1276,7 @@ class href_context(object):
 
             
         for pos in range(len(self.contextlist)-1,common_context-1,-1):
-            our_URL=urljoin(self.contextlist[pos],our_URL)
+            our_URL=my_urljoin(self.contextlist[pos],our_URL)
             pass
 
         # Remove any parallel leading '..''...
@@ -1205,7 +1288,7 @@ class href_context(object):
 
 
         new_context_parsed=urlsplit(new_context_URL)
-        our_parsed=urlsplit(urljoin(our_URL,our_fragment))
+        our_parsed=urlsplit(my_urljoin(our_URL,our_fragment))
         if new_context_parsed.scheme != "" or our_parsed.scheme != "":
             # Removing common context ancestors did not remove
             # all scheme specification....
@@ -1271,9 +1354,9 @@ class href_context(object):
             if common_context >= 1:
                 # Join with last bit of common context and retry
 
-                joined_self=href_context(urljoin(self.contextlist[common_context-1],urljoin(our_URL,our_fragment)),contexthref=self.contextlist[:(common_context-1)])
+                joined_self=href_context(my_urljoin(self.contextlist[common_context-1],my_urljoin(our_URL,our_fragment)),contexthref=self.contextlist[:(common_context-1)])
 
-                joined_new_context=href_context(urljoin(new_context.contextlist[common_context-1],new_context_URL),contexthref=new_context.contextlist[:(common_context-1)])
+                joined_new_context=href_context(my_urljoin(new_context.contextlist[common_context-1],new_context_URL),contexthref=new_context.contextlist[:(common_context-1)])
 
                 return joined_self.attempt_relative_url(joined_new_context)
             else:
@@ -1356,7 +1439,7 @@ class href_context(object):
             
             pass
         
-        return urljoin(normalized_result_path,our_fragment)
+        return my_urljoin(normalized_result_path,our_fragment)
     
 
     def attempt_relative_href(self,new_context):
@@ -1588,11 +1671,11 @@ class href_context(object):
         if self.isfile():
             path=self.getpath()
             canonpath=canonicalize_path(path)
-            URL=urljoin(pathname2url(canonpath),URL)
+            URL=my_urljoin(pathname2url(canonpath),URL)
             pass
         else:
             for pos in range(len(self.contextlist)-1,-1,-1):
-                URL=urljoin(self.contextlist[pos],URL)
+                URL=my_urljoin(self.contextlist[pos],URL)
                 pass
             pass
         self.canonicalize_cache=URL
