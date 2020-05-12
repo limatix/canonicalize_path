@@ -148,7 +148,7 @@ def my_urljoin(base, url):
         rel_params,
         rel_query,
         rel_fragment
-    )= urlparse(url, bscheme, allow_fragments)
+    ) = urlparse(url, base_scheme)
     
     if base_scheme != rel_scheme:
         return url
