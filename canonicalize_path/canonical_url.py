@@ -82,6 +82,8 @@ try:
     from urlparse import urlunsplit
     from urlparse import urljoin
     from urlparse import urldefrag
+    from urlparse import urlparse
+    from urlparse import urlunparse
     pass
 except ImportError:
     # py3.x
@@ -93,6 +95,8 @@ except ImportError:
     from urllib.parse import urlunsplit
     from urllib.parse import urljoin
     from urllib.parse import urldefrag
+    from urllib.parse import urlparse
+    from urllib.parse import urlunparse
     pass
 
 try: 
