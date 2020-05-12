@@ -193,7 +193,7 @@ def my_urljoin(base, url):
     # Collapse segments
     
     segnum = 1
-    while segnum < len(segments-1):
+    while segnum < len(segments)-1:
         if segments[segnum]==".." and segments[segnum-1] != "..":
             del segments[segnum-1]
             del segments[segnum-1]
