@@ -2,4 +2,4 @@
 # one level down
 
 
-from canonicalize_path import *
+from .canonicalize_path import *
