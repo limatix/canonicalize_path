@@ -1,5 +1,6 @@
 import sys
 import os.path
+import platformdirs
 
 try: 
     from pkg_resources import resource_string
@@ -24,19 +25,8 @@ canon_override={}
 # $PREFIX/etc/canonicalize_path/canonical_paths.conf 
 # and $PREFIX/etc/canonicalize_path/canonical_paths_local.conf 
 
-try: 
-    __install_prefix__=resource_string(__name__, 'install_prefix.txt').decode('utf-8')
-    pass
-except (IOError, TypeError): 
-    sys.stderr.write("canonicalize_path_module: error reading install_prefix.txt. Assuming /usr/local.\n")
-    __install_prefix__="/usr/local"
-    pass
 
-#if __install_prefix__=="/usr": 
-#    config_dir='/etc/canonicalize_path'
-#    pass
-#else:
-config_dir=os.path.join(__install_prefix__,"etc","canonicalize_path")
+config_dir=os.path.join(platformdirs.site_config_dir(appname = "limatix", appauthor = False),"canonicalize_path")
 
 
 try: 

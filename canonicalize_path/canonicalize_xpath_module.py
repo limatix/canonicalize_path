@@ -3,7 +3,7 @@ import os.path
 import string
 import re
 import copy
-
+import platformdirs
 
 try: 
     import builtins  # python3
@@ -51,21 +51,9 @@ try:
 except ImportError: 
     pass
     
-try: 
-    __install_prefix__=resource_string(__name__, 'install_prefix.txt').decode('utf-8')
-    pass
-except (IOError,TypeError): 
-    sys.stderr.write("canonicalize_xpath_module: error reading install_prefix.txt. Assuming /usr/local.\n")
-    __install_prefix__="/usr/local"
-    pass
 
+config_dir=os.path.join(platformdirs.site_config_dir(appname = "limatix", appauthor = False),"canonicalize_path")
 
-
-#if __install_prefix__=="/usr": 
-#    config_dir='/etc/canonicalize_path'
-#    pass
-#else:
-config_dir=os.path.join(__install_prefix__,"etc","canonicalize_path")
 
 DBDIR="{http://limatix.org/databrowse/dir}dir"
 DBFILE="{http://limatix.org/databrowse/dir}file"
